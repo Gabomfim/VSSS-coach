@@ -8,5 +8,10 @@ htmlcov/
 runs/
 role-runs/
 *.log
+*.aux
+*.bbl
+*.blg
+*.out
+*.toc
+*.zip
 .DS_Store
-

@@ -1,0 +1,1491 @@
+\documentclass[12pt,a4paper]{article}
+
+% ================================================================
+% Pacotes
+% ================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+
+\geometry{top=2.5cm,bottom=2.5cm,left=2.7cm,right=2.7cm}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  citecolor=green!40!black,
+  urlcolor=blue!65!black,
+  pdftitle={Coach Silvs -- Vector Fields Strategy Guide}
+}
+\setlist[itemize]{noitemsep,topsep=4pt}
+\setlist[enumerate]{noitemsep,topsep=4pt}
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0.15em}
+\newcommand{\vect}[1]{\boldsymbol{#1}}
+\newcommand{\unit}[1]{\widehat{\vect{#1}}}
+\newcommand{\R}{\mathbb{R}}
+\DeclareMathOperator{\clip}{clip}
+\DeclareMathOperator{\wrap}{wrap}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+% ================================================================
+% Documento
+% ================================================================
+\title{\textbf{Coach Silvs}\\[0.3cm]\large Vector Fields Strategy Guide}
+\author{Equipe de Futebol de Rob\^os VSSS}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Este documento prop\~oe o uso de programa\c{c}\~ao gen\'etica para descobrir as f\'ormulas dos campos vetoriais que controlam uma equipe de futebol de rob\^os na categoria Very Small Size Soccer (VSSS). Cada objeto do campo produz uma influ\^encia vetorial apropriada \`a sua geometria e fun\c{c}\~ao t\'atica. Objetos m\'oveis, como bola, aliados e advers\'arios, s\~ao tratados como pontos din\^amicos; paredes e gols s\~ao tratados como segmentos de reta. As express\~oes utilizam posi\c{c}\~ao, velocidade, acelera\c{c}\~ao, tempo restante e saldo de gols. Uma camada evolu\'ida gera a inten\c{c}\~ao t\'atica, enquanto uma camada determin\'istica preserva a seguran\c{c}a. As equipes s\~ao avaliadas em cinco partidas contra todos os advers\'arios da gera\c{c}\~ao, com penaliza\c{c}\~ao de empates, colis\~oes, instabilidade e complexidade excessiva.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ================================================================
+\section{Introdu\c{c}\~ao}
+% ================================================================
+
+O VSSS exige decis\~oes r\'apidas em um ambiente din\^amico e competitivo. Cada rob\^o deve responder \`a bola, aos companheiros, aos advers\'arios, \`as paredes, aos gols e ao estado da partida. Uma maneira computacionalmente leve de produzir essas respostas \`e associar cada objeto a um campo vetorial. A combina\c{c}\~ao dos campos define a dire\c{c}\~ao desejada do rob\^o.
+
+Em uma abordagem manual, o projetista define cada f\'ormula e ajusta seus par\^ametros. A proposta deste trabalho \'e evoluir a pr\'opria estrutura das equa\c{c}\~oes por programa\c{c}\~ao gen\'etica. O objetivo n\~ao \'e somente encontrar pesos, mas descobrir combina\c{c}\~oes interpret\'aveis de blocos geom\'etricos, cinem\'aticos e t\'aticos.
+
+O trabalho de Lim et al.\ utiliza campos univetoriais, obst\'aculos virtuais e velocidade relativa para navega\c{c}\~ao em futebol de rob\^os \cite{lim2008}. A proposta aqui desenvolvida amplia essa ideia com acelera\c{c}\~ao, tempo para colis\~ao, objetos segmentares, estado da partida, programa\c{c}\~ao gen\'etica tipada e uma camada formal de seguran\c{c}a.
+
+% ================================================================
+\section{Objetivos}
+% ================================================================
+
+O objetivo geral \'e evoluir f\'ormulas de campos vetoriais capazes de produzir comportamento coordenado, adapt\'avel e robusto em partidas VSSS.
+
+Os objetivos espec\'ificos s\~ao:
+
+\begin{itemize}
+  \item representar objetos pontuais e segmentares de maneira geometricamente adequada;
+  \item permitir especializa\c{c}\~ao dos tr\^es rob\^os aliados;
+  \item reutilizar a mesma estrutura para todos os advers\'arios;
+  \item explorar as simetrias do campo por espelhamento;
+  \item incorporar posi\c{c}\~ao, velocidade, acelera\c{c}\~ao, tempo e placar;
+  \item adaptar automaticamente agressividade e defensividade;
+  \item evitar colis\~oes e comandos fisicamente invi\'aveis;
+  \item avaliar as equipes por desempenho competitivo e robustez;
+  \item manter as f\'ormulas pequenas o suficiente para an\'alise humana.
+\end{itemize}
+
+% ================================================================
+\section{Vis\~ao geral da arquitetura}
+% ================================================================
+
+A arquitetura possui cinco etapas:
+
+\begin{enumerate}
+  \item o sistema de vis\~ao estima o estado da partida;
+  \item cada m\'odulo de objeto calcula um campo vetorial;
+  \item a programa\c{c}\~ao gen\'etica combina os campos em uma inten\c{c}\~ao nominal;
+  \item um filtro determin\'istico corrige comandos inseguros;
+  \item o controlador converte o vetor seguro em velocidade das rodas.
+\end{enumerate}
+
+Para o rob\^o $r$, o vetor nominal \'e:
+
+\begin{equation}
+  \vect{v}_{\mathrm{nom}}
+  =\mathcal{N}\left(\sum_{o\in\mathcal{O}}w_o\vect{F}_o\right),
+  \label{eq:nominal}
+\end{equation}
+
+em que $\mathcal{N}$ limita a magnitude, $w_o$ \'e um peso evolu\'ido e $\vect{F}_o$ \'e a contribui\c{c}\~ao do objeto $o$. O comando seguro \'e:
+
+\begin{equation}
+  \vect{v}_{\mathrm{seg}}
+  =\operatorname{SafetyFilter}(\vect{v}_{\mathrm{nom}},\mathcal{C}),
+\end{equation}
+
+em que $\mathcal{C}$ cont\'em as restri\c{c}\~oes de colis\~ao, campo, velocidade e acelera\c{c}\~ao. Essa separa\c{c}\~ao deixa a evolu\c{c}\~ao explorar decis\~oes t\'aticas sem exigir que ela redescubra regras b\'asicas de seguran\c{c}a.
+
+% ================================================================
+\section{Objetos do modelo}
+% ================================================================
+
+O conjunto completo de objetos \'e:
+
+\begin{itemize}
+  \item bola;
+  \item aliado 1, aliado 2 e aliado 3;
+  \item advers\'ario 1, advers\'ario 2 e advers\'ario 3;
+  \item parede esquerda e parede direita;
+  \item paredes direita e esquerda do lado advers\'ario;
+  \item paredes direita e esquerda do lado aliado;
+  \item gol aliado e gol advers\'ario.
+\end{itemize}
+
+Por espelhamento e compartilhamento de estrat\'egias, basta aprender:
+
+\begin{itemize}
+  \item um campo para a bola;
+  \item um campo para cada aliado;
+  \item um campo compartilhado pelos advers\'arios;
+  \item campos das paredes esquerda e direita;
+  \item um campo espelhado para as paredes do lado advers\'ario;
+  \item um campo espelhado para as paredes do lado aliado;
+  \item um campo para o gol aliado;
+  \item um campo para o gol advers\'ario.
+\end{itemize}
+
+% ================================================================
+\section{Estado e normaliza\c{c}\~ao}
+% ================================================================
+
+Para cada objeto m\'ovel $o$ est\~ao dispon\'iveis:
+
+\begin{equation}
+  \vect{p}_o=\begin{bmatrix}p_{o,i}\\p_{o,j}\end{bmatrix},\qquad
+  \vect{v}_o=\begin{bmatrix}v_{o,i}\\v_{o,j}\end{bmatrix},\qquad
+  \vect{a}_o=\begin{bmatrix}a_{o,i}\\a_{o,j}\end{bmatrix}.
+\end{equation}
+
+As grandezas relativas ao rob\^o controlado s\~ao:
+
+\begin{equation}
+  \vect{r}_o=\vect{p}_o-\vect{p}_r,\qquad
+  \vect{u}_o=\vect{v}_o-\vect{v}_r,\qquad
+  \vect{b}_o=\vect{a}_o-\vect{a}_r.
+\end{equation}
+
+Tamb\'em s\~ao entradas:
+
+\begin{equation}
+  T_r=\text{tempo restante},\qquad
+  \Delta G=G_{\mathrm{aliado}}-G_{\mathrm{advers\'ario}}.
+\end{equation}
+
+Para favorecer a transfer\^encia entre simuladores e dimens\~oes, usam-se vari\'aveis adimensionais:
+
+\begin{equation}
+  \widetilde{\vect{p}}=\frac{\vect{p}}{L_f},\quad
+  \widetilde{\vect{v}}=\frac{\vect{v}}{v_{\max}},\quad
+  \widetilde{\vect{a}}=\frac{\vect{a}}{a_{\max}},\quad
+  \widetilde{T}=\frac{T_r}{T_{\mathrm{partida}}},\quad
+  \widetilde{\Delta G}=\tanh(k_G\Delta G).
+\end{equation}
+
+Antes do c\'alculo, o estado \'e transformado para um referencial can\^onico no qual o gol advers\'ario est\'a sempre na mesma dire\c{c}\~ao. Assim, a mesma equa\c{c}\~ao funciona ap\'os a troca de lado.
+
+% ================================================================
+\section{Opera\c{c}\~oes protegidas}
+% ================================================================
+
+A divis\~ao protegida \'e:
+
+\begin{equation}
+  \operatorname{pdiv}(x,y)=\frac{x}{\operatorname{sign}(y)\max(|y|,\varepsilon)}.
+\end{equation}
+
+A normaliza\c{c}\~ao protegida \'e:
+
+\begin{equation}
+  \operatorname{unit}(\vect{x})=\frac{\vect{x}}{\|\vect{x}\|+\varepsilon}.
+\end{equation}
+
+A limita\c{c}\~ao escalar \'e:
+
+\begin{equation}
+  \clip(x,l,u)=\max(l,\min(u,x)).
+\end{equation}
+
+A magnitude vetorial \'e limitada por:
+
+\begin{equation}
+  \mathcal{N}(\vect{x})=
+  \frac{\vect{x}}{\max\left(1,\|\vect{x}\|/F_{\max}\right)}.
+\end{equation}
+
+Essas opera\c{c}\~oes evitam divis\~oes por zero, valores n\~ao finitos e comandos excessivos.
+
+% ================================================================
+\section{Objetos pontuais m\'oveis}
+% ================================================================
+
+Bola, aliados e advers\'arios s\~ao pontos din\^amicos. Seu modelo geral combina previs\~ao, componente radial, componente tangencial, velocidade e acelera\c{c}\~ao relativa.
+
+\subsection{Previs\~ao}
+
+A posi\c{c}\~ao relativa prevista ap\'os $\tau$ segundos \'e:
+
+\begin{equation}
+  \widehat{\vect{r}}_o(\tau)
+  =\vect{r}_o+\tau\vect{u}_o+\frac{1}{2}\tau^2\vect{b}_o.
+\end{equation}
+
+O horizonte permanece limitado:
+
+\begin{equation}
+  \tau=H\,\sigma(f_\tau(\mathcal{X}_o)),\qquad
+  \sigma(x)=\frac{1}{1+e^{-x}}.
+\end{equation}
+
+Uma alternativa inspirada no obst\'aculo virtual de \citet{lim2008} \'e:
+
+\begin{equation}
+  \vect{s}_o=k_v\vect{u}_o+k_a\vect{b}_o,
+\end{equation}
+
+\begin{equation}
+  \vect{s}'_o=\operatorname{unit}(\vect{s}_o)
+  \min(\|\vect{s}_o\|,\|\vect{r}_o\|),
+\end{equation}
+
+\begin{equation}
+  \vect{p}'_o=\vect{p}_o+\vect{s}'_o.
+\end{equation}
+
+\subsection{Componentes radial e tangencial}
+
+Definindo $\unit{d}_o=\operatorname{unit}(\vect{p}'_o-\vect{p}_r)$, a perpendicular \'e:
+
+\begin{equation}
+  \unit{d}_o^{\perp}=\begin{bmatrix}-\widehat{d}_{o,j}\\\widehat{d}_{o,i}\end{bmatrix}.
+\end{equation}
+
+O modelo geral \'e:
+
+\begin{equation}
+  \vect{F}_o=W_o\left[A_o\unit{d}_o+B_o\unit{d}_o^\perp+C_o\vect{u}_o+D_o\vect{b}_o\right],
+  \label{eq:ponto-geral}
+\end{equation}
+
+em que $W_o,A_o,B_o,C_o,D_o$ s\~ao express\~oes escalares evolu\'idas. $A_o>0$ produz atra\c{c}\~ao, $A_o<0$ produz repuls\~ao e $B_o$ produz circula\c{c}\~ao.
+
+% ================================================================
+\section{Risco de colis\~ao din\^amica}
+% ================================================================
+
+Apenas a dist\^ancia atual n\~ao indica se dois rob\^os est\~ao em rota de colis\~ao. O instante de maior aproxima\c{c}\~ao, ou CPA, \'e:
+
+\begin{equation}
+  t_{\mathrm{CPA}}=\clip\left(-\frac{\vect{r}_o\cdot\vect{u}_o}{\|\vect{u}_o\|^2+\varepsilon},0,H\right).
+\end{equation}
+
+A dist\^ancia prevista, incluindo acelera\c{c}\~ao, \'e:
+
+\begin{equation}
+  d_{\mathrm{CPA},a}=\left\|\vect{r}_o+t_{\mathrm{CPA}}\vect{u}_o+\frac{1}{2}t_{\mathrm{CPA}}^2\vect{b}_o\right\|.
+\end{equation}
+
+A velocidade de aproxima\c{c}\~ao \'e:
+
+\begin{equation}
+  v_{\mathrm{aprox}}=-\vect{u}_o\cdot\operatorname{unit}(\vect{r}_o).
+\end{equation}
+
+O risco normalizado pode ser:
+
+\begin{equation}
+  \chi_o=\sigma(k_d(R_{\mathrm{seg}}-d_{\mathrm{CPA},a}))
+  \exp\left(-\frac{t_{\mathrm{CPA}}}{\tau_c}\right).
+\end{equation}
+
+O campo de emerg\^encia combina afastamento e circula\c{c}\~ao:
+
+\begin{equation}
+  \vect{F}_{\mathrm{risco},o}=\chi_o\left[-k_r\unit{r}_o+k_cs_o\unit{r}_o^\perp\right],
+\end{equation}
+
+com $s_o\in\{-1,+1\}$. O lado de desvio \'e mantido at\'e que o obst\'aculo deixe a regi\~ao de risco, evitando oscila\c{c}\~oes. Obst\'aculos de velocidade e fun\c{c}\~oes de barreira oferecem uma formula\c{c}\~ao mais robusta para obst\'aculos m\'oveis r\'apidos \cite{huang2025}.
+
+% ================================================================
+\section{Campo da bola}
+% ================================================================
+
+A bola usa o campo univetorial de movimento ao alvo de Lim et al.\ \cite{lim2008},
+compartilhado pelos tr\^es jogadores. No referencial local da bola, cada campo
+hiperb\'olico tem dire\c{c}\~ao
+\begin{equation}
+ \phi_h=\theta\pm\frac{\pi}{2}
+ \begin{cases}
+  2-\dfrac{d_e+K_r}{\rho+K_r}, & \rho>d_e,\\
+  \sqrt{\rho/d_e}, & 0\leq\rho\leq d_e,
+ \end{cases}
+ \qquad \vect{N}_h=(\cos\phi_h,\sin\phi_h).
+\end{equation}
+Dentro de $-d_e\leq y<d_e$, implementa\c{c}\~oes operacionais de VSSS combinam
+os espirais com os m\'odulos dos pesos para reproduzir a Figura~3:
+\begin{equation}
+ \phi_{\mathrm{TUF}}=\angle\left(
+ \frac{|y+d_e|\vect{N}_{h,\mathrm{CCW}}(\vect{p}_l)
+ +|y-d_e|\vect{N}_{h,\mathrm{CW}}(\vect{p}_r)}{2d_e}\right).
+\end{equation}
+O eixo can\^onico \'e $\unit{u}=-\operatorname{unit}(\vect{q}_g-\vect{p}_b)$,
+oposto à dire\c{c}\~ao final do chute. Essa escolha, combinada com os pesos em
+m\'odulo, produz aproxima\c{c}\~ao à bola e orienta\c{c}\~ao final na dire\c{c}\~ao
+$\operatorname{unit}(\vect{q}_g-\vect{p}_b)$.
+Em cada ciclo, define-se $\unit{e}_x=\operatorname{unit}(\vect{q}_g-\vect{p}_b)$,
+onde $\vect{q}_g$ \'e o centro atual do gol inimigo, e
+$\unit{e}_y=\unit{e}_x^\perp$. Calcula-se o campo no referencial
+$(\unit{e}_x,\unit{e}_y)$ e aplica-se a rota\c{c}\~ao inversa ao campo. Assim,
+a orienta\c{c}\~ao muda continuamente com a posi\c{c}\~ao da bola e troca de lado
+automaticamente no segundo tempo. Evoluem-se somente $d_e$, $K_r$ e o ganho
+global; a equa\c{c}\~ao e os par\^ametros s\~ao iguais para todos os jogadores.
+
+Para evitar que os rob\^os persigam e desviem um chute que j\'a est\'a entrando,
+aplica-se uma porta determin\'istica somente \`a contribui\c{c}\~ao da bola. Seja
+$x_g$ a linha do gol advers\'ario e $s_a\in\{-1,+1\}$ o sentido de ataque. A
+porta desativa a atra\c{c}\~ao quando
+
+\begin{equation}
+  v_{b,x}s_a > 0, \quad \|\vect v_b\| \geq v_{\min}, \qquad
+  t_g=\frac{x_g-p_{b,x}}{v_{b,x}}>0, \qquad
+  \left|p_{b,y}+v_{b,y}t_g\right|\leq\frac{w_g}{2}.
+\end{equation}
+
+Os valores $v_{\min}$, $r_c$ e $k_c$ pertencem ao genoma de cada candidato. Seus
+valores iniciais s\~ao, respectivamente, $0{,}05$~m/s, $0{,}14$~m e $1{,}7$, com
+limites evolutivos $[0{,}02,1{,}50]$, $[0{,}08,0{,}30]$ e $[0{,}30,3{,}00]$.
+Enquanto a condi\c{c}\~ao for verdadeira, a atra\c{c}\~ao normal fica desativada.
+Para um rob\^o \`a frente da bola e a uma dist\^ancia lateral $d_\ell<r_c$ da
+reta do chute, ela \'e substitu\'ida por
+
+\begin{equation}
+  \vect F_{\mathrm{clear}}=\operatorname{perp}(\unit{\vect v_b})\,
+  k_c\left(1-\frac{|d_\ell|}{r_c}\right),
+\end{equation}
+
+com o sinal da perpendicular escolhido para apontar para a borda mais pr\'oxima.
+Rob\^os atr\'as da bola ou j\'a fora do corredor recebem
+contribui\c{c}\~ao nula da bola. Se a bola desacelera, muda de sentido ou passa a
+projetar um cruzamento fora da abertura $w_g$, o campo normal volta a atuar
+imediatamente. Campos de colis\~ao, paredes, aliados, advers\'arios e gols
+continuam ativos durante todo o chute.
+
+% ================================================================
+\section{Campos dos aliados}
+% ================================================================
+
+Cada aliado possui um m\'odulo pr\'oprio, permitindo especializa\c{c}\~ao emergente. O campo combina coordena\c{c}\~ao, forma\c{c}\~ao e seguran\c{c}a:
+
+\begin{equation}
+  \vect{F}_a=\vect{F}_{\mathrm{coord},a}+\vect{F}_{\mathrm{form},a}+\vect{F}_{\mathrm{seg},a}.
+\end{equation}
+
+A coordena\c{c}\~ao evolu\'ida pode ser:
+
+\begin{equation}
+  \vect{F}_{\mathrm{coord},a}=A_a\unit{r}_a+B_a\unit{r}_a^\perp+C_a\vect{u}_a.
+\end{equation}
+
+Para manter uma dist\^ancia $d_a^*$:
+
+\begin{equation}
+  \vect{F}_{\mathrm{form},a}=(\|\vect{r}_a\|-d_a^*)\unit{r}_a.
+\end{equation}
+
+Os blocos poss\'iveis incluem repuls\~ao de curto alcance, alinhamento de velocidades, posicionamento relativo \`a bola, defesa de regi\~ao, ocupa\c{c}\~ao de espa\c{c}o e circula\c{c}\~ao tangencial.
+
+% ================================================================
+\section{Campo compartilhado dos advers\'arios}
+% ================================================================
+
+Todos os advers\'arios utilizam a mesma fun\c{c}\~ao:
+
+\begin{equation}
+  \vect{F}_{e,k}=f_e(\vect{r}_{e,k},\vect{u}_{e,k},\vect{b}_{e,k},t_{\mathrm{CPA},k},d_{\mathrm{CPA},k}).
+\end{equation}
+
+Ela pode combinar preven\c{c}\~ao de colis\~ao, marca\c{c}\~ao e bloqueio:
+
+\begin{equation}
+  \vect{F}_{e,k}=w_{\mathrm{ev}}\vect{F}_{\mathrm{ev},k}
+  +w_{\mathrm{mar}}\vect{F}_{\mathrm{mar},k}
+  +w_{\mathrm{bloq}}\vect{F}_{\mathrm{bloq},k}.
+\end{equation}
+
+Para bloquear a linha entre um advers\'ario e um alvo:
+
+\begin{equation}
+  \vect{p}_{\mathrm{bloq},k}=\vect{p}_{e,k}+\eta(\vect{p}_{\mathrm{alvo}}-\vect{p}_{e,k}),\qquad 0\leq\eta\leq1.
+\end{equation}
+
+Os advers\'arios podem ser agregados por soma limitada, maior risco ou softmax:
+
+\begin{equation}
+  \omega_k=\frac{e^{\beta\chi_{e,k}}}{\sum_l e^{\beta\chi_{e,l}}},\qquad
+  \vect{F}_E=\sum_k\omega_k\vect{F}_{e,k}.
+\end{equation}
+
+Essa agrega\c{c}\~ao \'e invariante \`a numera\c{c}\~ao dos advers\'arios.
+
+% ================================================================
+\section{Objetos representados por segmentos}
+% ================================================================
+
+Uma parede ou um gol \'e um segmento $S=[\vect{s}_1,\vect{s}_2]$. Sua tangente \'e:
+
+\begin{equation}
+  \unit{t}_S=\operatorname{unit}(\vect{s}_2-\vect{s}_1),
+\end{equation}
+
+e uma normal \'e:
+
+\begin{equation}
+  \unit{n}_S=\begin{bmatrix}-\widehat{t}_{S,j}\\\widehat{t}_{S,i}\end{bmatrix}.
+\end{equation}
+
+O ponto do segmento mais pr\'oximo do rob\^o \'e:
+
+\begin{equation}
+  u_S=\clip\left(
+  \frac{(\vect{p}_r-\vect{s}_1)\cdot(\vect{s}_2-\vect{s}_1)}
+  {\|\vect{s}_2-\vect{s}_1\|^2+\varepsilon},0,1\right),
+\end{equation}
+
+\begin{equation}
+  \vect{q}_S=\vect{s}_1+u_S(\vect{s}_2-\vect{s}_1),\qquad
+  d_S=\|\vect{p}_r-\vect{q}_S\|.
+\end{equation}
+
+O modelo geral \'e:
+
+\begin{equation}
+  \vect{F}_S=N_S\unit{n}_S+H_S\unit{t}_S+E_S\operatorname{unit}(\vect{q}_S-\vect{p}_r).
+\end{equation}
+
+Assim, um segmento pode empurrar o rob\^o normalmente, conduzi-lo paralelamente ou atra\'i-lo para seu ponto mais pr\'oximo.
+
+% ================================================================
+\section{Campos das paredes}
+% ================================================================
+
+O rob\^o n\~ao \'e um ponto. A parede deve ser expandida pelo raio de seguran\c{c}a, formando uma c\'apsula:
+
+\begin{equation}
+  d_{\mathrm{livre},S}=d_S-r_r-m_S.
+\end{equation}
+
+A ativa\c{c}\~ao da parede \'e:
+
+\begin{equation}
+  \chi_S=\sigma(-k_Sd_{\mathrm{livre},S}).
+\end{equation}
+
+O campo combina normal interna e tangente:
+
+\begin{equation}
+  \vect{F}_{\mathrm{parede},S}=\chi_S(k_n\unit{n}_{\mathrm{int}}+k_ts_S\unit{t}_S).
+\end{equation}
+
+A velocidade normal:
+
+\begin{equation}
+  v_n=\vect{v}_r\cdot\unit{n}_{\mathrm{int}}
+\end{equation}
+
+permite antecipar a repuls\~ao quando o rob\^o se aproxima rapidamente. As extremidades do segmento tamb\'em s\~ao tratadas como pontos para evitar erros geom\'etricos nas quinas.
+
+Para impedir aglomera\c{c}\~oes, acrescenta-se um campo-base determin\'istico. Para
+dois aliados $r$ e $a$ associados \`a mesma parede, ele ativa quando
+$d_S(r)<d_c$, $d_S(a)<d_c$ e a dist\^ancia tangencial
+$\Delta_t=|(\vect{p}_r-\vect{p}_a)\cdot\unit{t}_S|$ satisfaz
+$\Delta_t<d_a$. A contribui\c{c}\~ao de $a$ sobre $r$ \`e
+
+\begin{equation}
+ \vect{F}_{\mathrm{desag},a}=
+ \left(1-\frac{d_S(r)}{d_c}\right)
+ \left(1-\frac{\Delta_t}{d_a}\right)
+ \left(k_t s_{ra}\unit{t}_S+k_n\unit{n}_{\mathrm{int}}\right),
+\end{equation}
+
+em que $s_{ra}$ escolhe o sentido tangencial que afasta os rob\^os. Na
+implementa\c{c}\~ao inicial, $d_c=0{,}14\,\mathrm{m}$,
+$d_a=0{,}24\,\mathrm{m}$, $k_t=0{,}8$ e $k_n=0{,}4$. O campo \`e nulo fora
+dessa configura\c{c}\~ao local, n\~ao \`e evolu\'ido e aparece isoladamente no
+dashboard como \texttt{wall\_decluster}.
+
+% ================================================================
+\section{Campos dos gols}
+% ================================================================
+
+O gol advers\'ario \'e um segmento atrativo e orientado. Ele \'e discretizado em $M$ pontos:
+
+\begin{equation}
+  \vect{q}_{g,m}=\vect{s}_{g,1}+\frac{m}{M-1}(\vect{s}_{g,2}-\vect{s}_{g,1}).
+\end{equation}
+
+Para cada ponto calcula-se um bloqueio aproximado:
+
+\begin{equation}
+  B_m=\sum_k\exp\left[-\frac{d^2(\vect{p}_{e,k},L(\vect{p}_b,\vect{q}_{g,m}))}{2\sigma_g^2}\right].
+\end{equation}
+
+A qualidade pode incluir bloqueio, desalinhamento e dist\^ancia:
+
+\begin{equation}
+  Q_m=-w_BB_m-w_\theta|e_{\theta,m}|-w_dd_{b,m}.
+\end{equation}
+
+A escolha suave \'e:
+
+\begin{equation}
+  \pi_m=\frac{e^{\beta_gQ_m}}{\sum_l e^{\beta_gQ_l}},\qquad
+  \vect{q}_g=\sum_m\pi_m\vect{q}_{g,m}.
+\end{equation}
+
+O gol aliado usa blocos diferentes: posicionamento defensivo, bloqueio da linha bola--gol, movimento tangencial sobre a linha de defesa e repuls\~ao da regi\~ao interna.
+
+% ================================================================
+\section{Adapta\c{c}\~ao ao estado da partida}
+% ================================================================
+
+Uma fun\c{c}\~ao de urg\^encia \'e:
+
+\begin{equation}
+  U(T_r)=\frac{1}{1+\exp(k_T(T_r-T_0))}.
+\end{equation}
+
+Um modificador de agressividade pode ser:
+
+\begin{equation}
+  A_{\mathrm{jogo}}=\tanh(-k_G\Delta G+k_UU(T_r)).
+\end{equation}
+
+Os pesos ofensivos e defensivos tornam-se:
+
+\begin{equation}
+  w_{\mathrm{ataque}}=w_{A,0}(1+\alpha_AA_{\mathrm{jogo}}),
+\end{equation}
+
+\begin{equation}
+  w_{\mathrm{defesa}}=w_{D,0}(1-\alpha_DA_{\mathrm{jogo}}).
+\end{equation}
+
+Assim, quando a equipe est\'a perdendo e o tempo est\'a acabando, a evolu\c{c}\~ao pode aumentar a press\~ao ofensiva. Quando est\'a vencendo, pode priorizar prote\c{c}\~ao do gol e controle da bola. As express\~oes acima s\~ao modelos iniciais; sua estrutura pode ser substitu\'ida por outras \`arvores v\'alidas.
+
+% ================================================================
+\section{Composi\c{c}\~ao dos campos}
+% ================================================================
+
+Uma soma simples pode permitir que um objetivo t\'atico anule um campo de seguran\c{c}a. Por isso, a composi\c{c}\~ao pode ser hier\'arquica. Uma ativa\c{c}\~ao gaussiana \`a dist\^ancia $d$ \'e:
+
+\begin{equation}
+  \gamma(d)=\exp\left[-\frac{\max(0,d-d_{\min})^2}{2\delta^2}\right].
+\end{equation}
+
+O campo composto \'e:
+
+\begin{equation}
+  \vect{F}_{\mathrm{comp}}=\gamma(d)\vect{F}_{\mathrm{seguran\c{c}a}}+[1-\gamma(d)]\vect{F}_{\mathrm{tarefa}}.
+\end{equation}
+
+Campos circulares n\~ao gradientes ajudam a evitar m\'inimos locais e podem preservar propriedades de converg\^encia \cite{panagou2014}. Campos din\^amicos tamb\'em permitem planejar posi\c{c}\~ao e orienta\c{c}\~ao simultaneamente \cite{he2022}.
+
+% ================================================================
+\section{Filtro de seguran\c{c}a}
+% ================================================================
+
+Para um obst\'aculo circular com raio combinado $R_o$:
+
+\begin{equation}
+  h_o=\|\vect{p}_o-\vect{p}_r\|^2-R_o^2.
+\end{equation}
+
+A regi\~ao segura satisfaz $h_o\geq0$. Para um controle por velocidade, imp\~oe-se:
+
+\begin{equation}
+  2(\vect{p}_o-\vect{p}_r)^\top(\vect{v}_o-\vect{v})+\alpha h_o\geq0.
+\end{equation}
+
+O filtro resolve:
+
+\begin{equation}
+  \vect{v}_{\mathrm{seg}}=\argmin_{\vect{v}}\|\vect{v}-\vect{v}_{\mathrm{nom}}\|^2,
+\end{equation}
+
+sujeito \`as restri\c{c}\~oes de todos os obst\'aculos e aos limites do rob\^o. Fun\c{c}\~oes de barreira s\~ao uma ferramenta consolidada para impor seguran\c{c}a por invari\^ancia do conjunto seguro \cite{ames2019}. A combina\c{c}\~ao com previs\~ao e incerteza foi estudada para obst\'aculos din\^amicos \cite{jian2022}.
+
+\subsection{Recupera\c{c}\~ao determin\'istica junto \`as traves}
+
+As quatro traves s\~ao pontos de risco f\'isico. Para a trave mais pr\'oxima
+$\vect{p}_t$, define-se $d_t=\|\vect{p}_r-\vect{p}_t\|$ e
+$s_r=\|\vect{v}_r\|$. O override somente arma quando
+
+\begin{equation}
+ d_t\leq 0{,}13\,\mathrm{m}\quad\land\quad
+ s_r\leq 0{,}05\,\mathrm{m/s}
+\end{equation}
+
+permanece verdadeiro por pelo menos $0{,}30\,\mathrm{s}$. Para tolerar
+patina\c{c}\~ao e ru\'ido da f\'isica, o sistema tamb\'em considera preso o rob\^o
+cujo deslocamento acumulado nesse intervalo n\~ao ultrapassa $0{,}015\,\mathrm{m}$.
+Depois de armado,
+ele permanece ativo at\'e $d_t\geq0{,}19\,\mathrm{m}$; essa diferen\c{c}a entre
+os raios de entrada e sa\'ida implementa histerese. A dire\c{c}\~ao combina a
+normal que afasta da trave, uma componente para dentro do campo e uma componente
+orientada ao centro da boca do gol:
+
+\begin{equation}
+ \vect{v}_{t}=v_t(d_t)\,\unit{\vect{n}_{\mathrm{fora}}+
+ \vect{n}_{\mathrm{campo}}+k_t\vect{n}_{\mathrm{centro}}},
+ \qquad k_t=0{,}65.
+\end{equation}
+
+A refer\^encia interior e central impede que a rota de recupera\c{c}\~ao escolha
+o estreito espa\c{c}o externo atr\'as da trave. O controlador diferencial escolhe
+o sentido de rota\c{c}\~ao que reduz o erro angular para essa refer\^encia.
+A velocidade $v_t$ cresce suavemente com a dist\^ancia,
+mas fica limitada a $0{,}55\,\mathrm{m/s}$, reduzindo impactos perto da trave.
+Esse campo tem prioridade absoluta, inclusive sobre a sa\'ida comum do interior
+do gol. Seus par\^ametros n\~ao pertencem ao genoma: trata-se de uma condi\c{c}\~ao
+determin\'istica de seguran\c{c}a e recupera\c{c}\~ao f\'isica.
+
+Quando o centro do rob\^o j\'a est\'a dentro do volume de qualquer gol, as paredes
+laterais e traseira induzem uma sa\'ida guiada. Em vez de usar apenas a normal da
+linha do gol, define-se um alvo $\vect{p}_m$ sobre o eixo central da boca e dentro
+do campo:
+
+\begin{equation}
+ \vect{v}_{\mathrm{gol}}=v_{\max}\,
+ \unit{\vect{p}_m-\vect{p}_r}.
+\end{equation}
+
+A componente longitudinal retira o rob\^o do gol e a componente lateral o afasta
+do encontro entre parede lateral e parede traseira. Portanto, os cantos internos
+deixam de ser equil\'ibrios do controlador. Esse override somente existe atr\'as
+da linha do gol e n\~ao atrai jogadores que estejam no campo de jogo.
+
+Um segundo override determin\'istico trata os bols\~oes formados entre as paredes
+laterais e o gol advers\'ario. Ele ativa nos $0{,}24\,\mathrm{m}$ finais do ataque,
+quando o rob\^o est\'a a menos de $0{,}15\,\mathrm{m}$ da lateral e fora da boca do
+gol. O vetor de $0{,}65\,\mathrm{m/s}$ combina retorno oposto ao ataque com uma
+componente mais forte para o centro do campo. A regra \`e espelhada no intervalo.
+Al\'em disso, a aproxima\c{c}\~ao da bola passa a mirar o centro do gol advers\'ario,
+evitando que v\'arios rob\^os convirjam para a mesma trave e empurrem a bola de
+volta para a lateral. Todos os campos evolu\'idos e overrides determin\'isticos
+podem ser selecionados separadamente no dashboard.
+
+\subsection{Gate lateral para finaliza\c{c}\~ao nas quinas}
+
+Quando a bola se aproxima do gol advers\'ario, projeta-se sua trajet\'oria sobre
+a linha do gol. Seja $s\in\{-1,+1\}$ o sentido de ataque, $x_g$ a linha do gol e
+
+\begin{equation}
+ t_g=\frac{x_g-x_b}{v_{b,x}},\qquad
+ y_c=s(y_b+v_{b,y}t_g).
+\end{equation}
+
+O sinal de $y_c$ identifica a quina esquerda ou direita no referencial ofensivo.
+O gate ativa somente se a bola estiver a uma dist\^ancia longitudinal menor que
+$d_g$, com velocidade acima do limiar, e
+
+\begin{equation}
+ \left||y_c|-\frac{W_g}{2}\right|\leq\delta_c,
+\end{equation}
+
+em que $W_g$ \`e a largura do gol e $\delta_c$ \`e a faixa da quina. Para um
+jogador, define-se o \^angulo lateral relativo \`a bola:
+
+\begin{equation}
+ \alpha_r=\operatorname{atan2}\!\left(s(y_r-y_b),\,|s(x_r-x_b)|+\varepsilon\right).
+\end{equation}
+
+Se $\operatorname{sign}(y_c)\alpha_r\geq\alpha_{\min}$, o jogador est\'a do mesmo lado e mant\'em
+o campo normal da bola. Caso contr\'ario, a atra\c{c}\~ao \`a bola \`e substitu\'ida por
+
+\begin{equation}
+ \vect{F}_{\mathrm{cede}}=-k_c\,s\,\vect{i},
+\end{equation}
+
+fazendo-o ceder espa\c{c}o ao finalizador do lado correto. Os par\^ametros
+$d_g$, $\delta_c$, $\alpha_{\min}$ e $k_c$ s\~ao evolu\'idos, com valores iniciais
+de $0{,}45\,\mathrm{m}$, $0{,}12\,\mathrm{m}$, $0{,}05\,\mathrm{rad}$ e $0{,}55$.
+Como todas as coordenadas laterais usam $s$, a regra \`e automaticamente
+espelhada no segundo tempo.
+
+\subsection{Visualiza\c{c}\~ao do campo da bola}
+
+O dashboard recalcula a mesma equa\c{c}\~ao do controlador em todos os pontos do
+canvas para o quadro selecionado. S\~ao mostrados $d_e$, $K_r$, o ganho, o
+\^angulo instant\^aneo entre a bola e o centro do gol advers\'ario e a express\~ao
+completa. A sele\c{c}\~ao de jogador muda apenas o ponto de observa\c{c}\~ao; n\~ao
+seleciona uma f\'ormula diferente para a bola.
+
+O tempo de bola parada permanece uma m\'etrica exclusivamente diagn\'ostica. Sua
+m\'edia e seu desvio padr\~ao por gera\c{c}\~ao s\~ao apresentados no dashboard,
+mas n\~ao alteram a taxa nem a escala da muta\c{c}\~ao. Esses valores s\~ao
+determinados apenas pelos par\^ametros configurados para o experimento, evitando
+que uma medida indireta de desempenho desestabilize a busca evolutiva.
+
+Al\'em disso, seja $T_b$ o tri\^angulo com v\'ertices na bola
+e nas duas traves advers\'arias. Para um rob\^o no interior de $T_b$, um campo
+priorit\'ario substitui temporariamente a soma nominal:
+
+\begin{equation}
+ \vect{F}_{T}=k_T\left(1-\frac{|y_r-y_c(x_r)|}{h_T(x_r)}\right)
+ s_T\vect{j}-s k_R\left(1-\frac{x_r^{(s)}-x_b^{(s)}}{x_g^{(s)}-x_b^{(s)}}\right)\vect{i}.
+\end{equation}
+
+Aqui, $y_c(x)$ e $h_T(x)$ s\~ao o centro e a meia-largura interpolados do
+tri\^angulo, e $s_T$ aponta para sua borda lateral mais pr\'oxima. Uma margem
+$m_T$ expande levemente a regi\~ao. Evoluem $m_T$, $k_T$ e $k_R$, mantendo
+limites inferiores positivos.
+
+Para diagn\'ostico, o dashboard mede intervalos cont\'inuos em que
+$\|\vect{v}_b\|\leq v_{\mathrm{parada}}$. Se o intervalo ultrapassa
+$T_{\mathrm{parada}}$, a partida e o respectivo par de candidatos aparecem em
+vermelho nos menus, junto da maior dura\c{c}\~ao observada. Os valores padr\~ao
+s\~ao $v_{\mathrm{parada}}=0{,}02\,\mathrm{m/s}$ e
+$T_{\mathrm{parada}}=5\,\mathrm{s}$, configur\'aveis no terminal.
+
+% ================================================================
+\section{Convers\~ao para o rob\^o diferencial}
+% ================================================================
+
+A dire\c{c}\~ao desejada \'e:
+
+\begin{equation}
+  \theta_d=\operatorname{atan2}(v_{\mathrm{seg},j},v_{\mathrm{seg},i}),\qquad
+  e_\theta=\wrap(\theta_d-\theta_r).
+\end{equation}
+
+A velocidade linear diminui quando o rob\^o est\'a desalinhado:
+
+\begin{equation}
+  v=v_{\max}\tanh(k_v\|\vect{v}_{\mathrm{seg}}\|)\max(0,\cos e_\theta),
+\end{equation}
+
+e a velocidade angular \'e:
+
+\begin{equation}
+  \omega=\clip(k_\omega e_\theta,-\omega_{\max},\omega_{\max}).
+\end{equation}
+
+Para dist\^ancia entre rodas $L_r$ e raio $R_w$:
+
+\begin{equation}
+  \omega_L=\frac{v-\frac{L_r}{2}\omega}{R_w},\qquad
+  \omega_R=\frac{v+\frac{L_r}{2}\omega}{R_w}.
+\end{equation}
+
+% ================================================================
+\section{Programa\c{c}\~ao gen\'etica}
+% ================================================================
+
+Programa\c{c}\~ao gen\'etica evolui programas, normalmente representados como \`arvores \cite{poli2008,koza1992}. Os n\'os internos s\~ao operadores e as folhas s\~ao vari\'aveis ou constantes.
+
+\subsection{Gram\'atica tipada}
+
+Os tipos fundamentais s\~ao \texttt{Scalar}, \texttt{Vector2}, \texttt{Point}, \texttt{Segment}, \texttt{Angle}, \texttt{Boolean} e \texttt{Weight01}. Exemplos:
+
+\begin{align}
+  \operatorname{distance}&:\texttt{Point}\times\texttt{Point}\rightarrow\texttt{Scalar},\\
+  \operatorname{direction}&:\texttt{Point}\times\texttt{Point}\rightarrow\texttt{Vector2},\\
+  \operatorname{closestPoint}&:\texttt{Point}\times\texttt{Segment}\rightarrow\texttt{Point},\\
+  \operatorname{scale}&:\texttt{Scalar}\times\texttt{Vector2}\rightarrow\texttt{Vector2},\\
+  \operatorname{mix}&:\texttt{Vector2}\times\texttt{Vector2}\times\texttt{Weight01}\rightarrow\texttt{Vector2}.
+\end{align}
+
+Essa tipagem impede, por exemplo, a soma direta de um ponto com um \^angulo. O DEAP oferece suporte a programa\c{c}\~ao gen\'etica tipada e paraleliza\c{c}\~ao \cite{deap}.
+
+\subsection{Primitivas e terminais}
+
+As primitivas escalares incluem $+$, $-$, $\times$, divis\~ao protegida, $\min$, $\max$, valor absoluto, $\tanh$, exponencial, sigmoide e limita\c{c}\~ao. As primitivas vetoriais incluem soma, escala, normaliza\c{c}\~ao, rota\c{c}\~ao, produto escalar, proje\c{c}\~ao e mistura.
+
+Os terminais incluem componentes de posi\c{c}\~ao, velocidade e acelera\c{c}\~ao; dist\^ancias; CPA; dire\c{c}\~oes radiais, tangenciais e normais; tempo restante; saldo de gols; e constantes ef\^emeras.
+
+\subsection{Estrutura modular}
+
+Um indiv\'iduo \'e:
+
+\begin{equation}
+  \mathcal{I}=\{M_b,M_{a1},M_{a2},M_{a3},M_e,M_p,M_{ga},M_{ge},M_s,M_c\},
+\end{equation}
+
+em que os m\'odulos representam bola, aliados, advers\'arios, paredes, gols, estado e composi\c{c}\~ao. O cruzamento pode trocar um m\'odulo inteiro ou uma sub\'arvore, preservando blocos funcionais.
+
+\subsection{Processo evolutivo}
+
+\begin{enumerate}
+  \item gerar a popula\c{c}\~ao inicial;
+  \item avaliar todos os confrontos;
+  \item classificar ou ordenar por Pareto;
+  \item preservar a elite;
+  \item selecionar pais;
+  \item aplicar cruzamento e muta\c{c}\~ao;
+  \item inserir uma pequena quantidade de indiv\'iduos novos;
+  \item formar a gera\c{c}\~ao seguinte;
+  \item repetir at\'e o crit\'erio de parada.
+\end{enumerate}
+
+Para reduzir \textit{bloat}, s\~ao limitados profundidade, n\'umero de n\'os e custo de execu\c{c}\~ao das f\'ormulas.
+
+% ================================================================
+\section{Formato da competi\c{c}\~ao}
+% ================================================================
+
+Todos os times da gera\c{c}\~ao competem entre si cinco vezes. Para $N$ equipes:
+
+\begin{equation}
+  P=5\frac{N(N-1)}{2}.
+\end{equation}
+
+\begin{table}[ht]
+\centering
+\caption{Partidas por gera\c{c}\~ao.}
+\begin{tabular}{cc}
+\toprule
+Equipes & Partidas \\
+\midrule
+10 & 225 \\
+20 & 950 \\
+50 & 6.125 \\
+100 & 24.750 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+As cinco partidas variam posi\c{c}\~oes iniciais, lado do campo, ru\'ido, atrito, atraso, velocidade e acelera\c{c}\~ao. A troca de lado reduz vantagens geom\'etricas acidentais.
+
+A pontua\c{c}\~ao b\'asica \'e:
+
+\begin{itemize}
+  \item vit\'oria: $+3$;
+  \item derrota: $-3$;
+  \item empate: $-1$.
+\end{itemize}
+
+Os crit\'erios de classifica\c{c}\~ao s\~ao: confrontos vencidos, vit\'orias, aptid\~ao, saldo de gols, gols marcados, menor n\'umero de empates e menor n\'umero de gols sofridos.
+
+% ================================================================
+\section{Fun\c{c}\~ao de aptid\~ao}
+% ================================================================
+
+Estrat\'egias que excedem limites de colis\~ao, comandos inv\'alidos ou instabilidade s\~ao consideradas invi\'aveis. Entre as vi\'aveis, usa-se uma avalia\c{c}\~ao multiobjetivo:
+
+\begin{equation}
+  \vect{J}=\begin{bmatrix}
+  J_{\mathrm{resultado}} & J_{\mathrm{saldo}} & J_{\mathrm{empates}} &
+  J_{\mathrm{seguran\c{c}a}} & J_{\mathrm{suavidade}} & J_{\mathrm{complexidade}}
+  \end{bmatrix}^{\top}.
+\end{equation}
+
+\begin{equation}
+  J_{\mathrm{resultado}}=3N_V-3N_D-N_E,
+\end{equation}
+
+\begin{equation}
+  J_{\mathrm{saldo}}=\sum_j\clip(G_{m,j}-G_{s,j},-L_G,L_G),
+\end{equation}
+
+\begin{equation}
+  J_{\mathrm{suavidade}}=-\sum_t\|\vect{v}_{\mathrm{cmd}}(t)-\vect{v}_{\mathrm{cmd}}(t-1)\|^2,
+\end{equation}
+
+\begin{equation}
+  J_{\mathrm{complexidade}}=-(n_{\mathrm{n\'os}}+\lambda_dd_{\mathrm{\'arvore}}).
+\end{equation}
+
+A sele\c{c}\~ao de Pareto evita que muitos gols compensem colis\~oes ou f\'ormulas excessivamente complexas. A seguran\c{c}a deve ser tratada como restri\c{c}\~ao priorit\'aria.
+
+% ================================================================
+\section{Coevolu\c{c}\~ao e generaliza\c{c}\~ao}
+% ================================================================
+
+Avaliar apenas contra a gera\c{c}\~ao atual pode produzir especializa\c{c}\~ao e ciclos como $A>B$, $B>C$ e $C>A$. A coevolu\c{c}\~ao j\'a foi aplicada ao surgimento de coordena\c{c}\~ao espacial em futebol de rob\^os \cite{coelho2001}.
+
+Cada candidato joga contra:
+
+\begin{itemize}
+  \item toda a popula\c{c}\~ao atual;
+  \item campe\~oes de gera\c{c}\~oes anteriores;
+  \item estrat\'egias manuais de refer\^encia;
+  \item estrat\'egias aleat\'orias v\'alidas;
+  \item vers\~oes perturbadas de estrat\'egias conhecidas.
+\end{itemize}
+
+Os campe\~oes formam um \textit{Hall of Fame}. A aptid\~ao robusta pode combinar m\'edia e variabilidade:
+
+\begin{equation}
+  J_{\mathrm{robusto}}=\mathbb{E}[J]-\lambda_\sigma\operatorname{Std}[J].
+\end{equation}
+
+% ================================================================
+\section{Compara\c{c}\~ao com Reinforcement Learning}
+% ================================================================
+
+Na programa\c{c}\~ao gen\'etica, a equipe inteira \'e um programa candidato e recebe uma avalia\c{c}\~ao ap\'os as partidas. Em Reinforcement Learning (RL), uma pol\'itica aprende pela associa\c{c}\~ao entre estados, a\c{c}\~oes e recompensas ao longo das intera\c{c}\~oes \cite{sutton2018}.
+
+\begin{table}[ht]
+\centering
+\caption{Compara\c{c}\~ao resumida.}
+\begin{tabular}{p{3.1cm}p{5.2cm}p{5.2cm}}
+\toprule
+Crit\'erio & Programa\c{c}\~ao gen\'etica & Reinforcement Learning \\
+\midrule
+Representa\c{c}\~ao & F\'ormulas e \`arvores & Pol\'itica, frequentemente neural \\
+Interpreta\c{c}\~ao & Geralmente maior & Geralmente menor \\
+Feedback & Resultado agregado & Recompensas por transi\c{c}\~ao \\
+Dados & Menor reutiliza\c{c}\~ao & Pode reutilizar experi\^encias \\
+Recompensa & Pode ser baseada em partidas & Requer cuidado com recompensa esparsa ou moldada \\
+Paraleliza\c{c}\~ao & Partidas independentes & Ambientes paralelos com atualiza\c{c}\~ao da pol\'itica \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+RL completo e transfer\^encia simula\c{c}\~ao--real j\'a foram estudados no VSSS \cite{reis2020,maciel2021}. Uma abordagem h\'ibrida pode usar programa\c{c}\~ao gen\'etica para descobrir a estrutura interpret\'avel e RL para ajustar par\^ametros ou corrigir o vetor nominal.
+
+% ================================================================
+\section{Vantagens, limita\c{c}\~oes e riscos}
+% ================================================================
+
+As principais vantagens s\~ao interpretabilidade, avalia\c{c}\~ao pelo objetivo final, busca estrutural, paraleliza\c{c}\~ao, especializa\c{c}\~ao emergente e descoberta de comportamentos inesperados.
+
+As limita\c{c}\~oes incluem alto custo computacional, baixa informa\c{c}\~ao fornecida por uma derrota, crescimento das \`arvores, instabilidade das muta\c{c}\~oes, especializa\c{c}\~ao nos advers\'arios e diferen\c{c}a entre simulador e realidade.
+
+Os principais mecanismos de mitiga\c{c}\~ao s\~ao:
+
+\begin{itemize}
+  \item filtro de seguran\c{c}a independente;
+  \item elitismo e Hall of Fame;
+  \item penaliza\c{c}\~ao de complexidade;
+  \item diversidade e novos indiv\'iduos;
+  \item randomiza\c{c}\~ao de dom\'inio;
+  \item advers\'arios de teste n\~ao vistos;
+  \item valida\c{c}\~ao nos rob\^os reais.
+\end{itemize}
+
+\section{Integra\c{c}\~ao com o TraveSim}
+\label{sec:travesim}
+
+O simulador adotado para o projeto \'e o TraveSim, um ambiente aberto de VSSS baseado no Webots \cite{travesim}. Ele oferece mundos para partidas 3v3 e 5v5, um mundo de desenvolvimento com um rob\^o, modelos f\'isicos do campo, da bola e dos rob\^os diferenciais, al\'em de uma ponte de comunica\c{c}\~ao compat\'ivel com VSSProto.
+
+O TraveSim separa o simulador da estrat\'egia. O controlador do \`arbitro atua como supervisor do Webots, coleta o estado f\'isico da partida e publica um objeto Protocol Buffers do tipo \texttt{Environment}. A estrat\'egia executa como um processo externo, recebe essa mensagem e devolve um pacote contendo as velocidades das rodas de cada rob\^o.
+
+O Webots \'e o motor de simula\c{c}\~ao f\'isica tridimensional: integra movimento, atrito, contatos, rodas diferenciais e controladores. Em experimentos paralelos ele \'e iniciado em modo \texttt{batch}, minimizado e sem renderiza\c{c}\~ao. A sa\'ida de cada inst\^ancia \'e redirecionada para arquivo, evitando janelas e mensagens concorrentes no ambiente de trabalho.
+
+\subsection{Regulamento e par\^ametros can\^onicos}
+
+A p\'agina oficial da RoboCore foi consultada antes da defini\c{c}\~ao do ambiente. O documento vigente encontrado para Futebol Mini/VSSS \'e a vers\~ao 3.0, revisada em 27 de maio de 2025 \cite{robocoreRules}. O PDF fornecido pela equipe tem a mesma vers\~ao e data; portanto, ele pode ser usado localmente sem diverg\^encia em rela\c{c}\~ao \'a publica\c{c}\~ao oficial.
+
+Os par\^ametros geom\'etricos e f\'isicos usados pelo perfil \texttt{robocore-vsss-2025} s\~ao apresentados na Tabela~\ref{tab:ruleset}.
+
+\begin{table}[ht]
+\centering
+\caption{Par\^ametros principais do ambiente em unidades do SI.}
+\label{tab:ruleset}
+\begin{tabular}{lr}
+\toprule
+Par\^ametro & Valor \\
+\midrule
+Campo (comprimento $\times$ largura) & $1{,}50\times1{,}30\,\mathrm{m}$ \\
+Parede (altura $\times$ espessura) & $0{,}05\times0{,}025\,\mathrm{m}$ \\
+Tri\^angulo de canto (catetos) & $0{,}07\,\mathrm{m}$ \\
+C\'irculo central (raio) & $0{,}20\,\mathrm{m}$ \\
+Espessura das marca\c{c}\~oes & $0{,}003\,\mathrm{m}$ \\
+Gol (largura $\times$ profundidade) & $0{,}40\times0{,}10\,\mathrm{m}$ \\
+\'Area do gol (largura $\times$ profundidade) & $0{,}70\times0{,}15\,\mathrm{m}$ \\
+Bola (di\^ametro; massa) & $0{,}0427\,\mathrm{m}$; $0{,}046\,\mathrm{kg}$ \\
+Rob\^os por equipe & $1$ a $3$ \\
+Envelope do rob\^o; envelope com uniforme & $0{,}075\,\mathrm{m}$; $0{,}080\,\mathrm{m}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A partida regulamentar possui dois per\'iodos de cinco minutos e intervalo de at\'e cinco minutos. Em confrontos que exigem vencedor, o desempate utiliza dois per\'iodos extras de tr\^es minutos e, se necess\'ario, gol de ouro. Cada equipe pode solicitar dois tempos t\'ecnicos de dois minutos. A posse incontestada do goleiro e a bola parada fora das \'areas t\^em limite de cinco segundos. Um gol somente \'e v\'alido quando a bola cruza integralmente a linha; portanto, o monitor deve comparar a linha com a extremidade da bola, e n\~ao apenas com seu centro.
+
+Essas regras s\~ao independentes do protocolo experimental. O torneio de programa\c{c}\~ao gen\'etica continua realizando cinco jogos entre cada par de candidatos e pode penalizar empates na fitness. Essa repeti\c{c}\~ao reduz vari\^ancia estat\'istica e n\~ao altera a dura\c{c}\~ao ou o crit\'erio oficial de cada partida.
+
+A dura\c{c}\~ao regulamentar do backend \'e de 600 segundos ativos, divididos em dois tempos de 300 segundos. No intervalo, o supervisor pausa a f\'isica, reflete as poses iniciais dos rob\^os em rela\c{c}\~ao ao eixo vertical do campo, soma $\pi$ \'a orienta\c{c}\~ao, centraliza a bola e zera as velocidades. Rein\'icios posteriores a gols usam as poses refletidas durante o segundo tempo.
+
+\subsection{Canais de comunica\c{c}\~ao}
+
+Os canais padr\~ao s\~ao apresentados na Tabela~\ref{tab:travesim-udp}.
+
+\begin{table}[ht]
+\centering
+\caption{Canais UDP utilizados pelo TraveSim.}
+\label{tab:travesim-udp}
+\begin{tabular}{lll}
+\toprule
+Canal & Endere\c{c}o & Porta \\
+\midrule
+Vis\~ao multicast & \texttt{224.0.0.1} & \texttt{10002} \\
+Comandos da equipe amarela & \texttt{127.0.0.1} & \texttt{20012} \\
+Comandos da equipe azul & \texttt{127.0.0.1} & \texttt{20013} \\
+Reposicionamento & \texttt{127.0.0.1} & \texttt{20011} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+O pacote de vis\~ao disponibiliza:
+
+\begin{itemize}
+  \item posi\c{c}\~ao e velocidade da bola;
+  \item posi\c{c}\~ao, orienta\c{c}\~ao, velocidade linear e velocidade angular dos rob\^os;
+  \item dimens\~oes do campo, dos gols e das \`areas;
+  \item placar das equipes amarela e azul;
+  \item passo atual da simula\c{c}\~ao.
+\end{itemize}
+
+O pacote de comandos cont\'em, para cada rob\^o, seu identificador, a cor da equipe e as velocidades angulares das rodas esquerda e direita.
+
+\subsection{Classifica\c{c}\~ao do ambiente segundo AIMA}
+
+Adotamos a terminologia de Russell e Norvig em \textit{Artificial Intelligence: A Modern Approach} \cite{russellnorvig2021}. O ambiente VSSS \`e:
+
+\begin{description}
+  \item[Parcialmente observ\'avel:] a c\^amera fornece uma proje\c{c}\~ao 2D com ru\'ido, oclus\~oes e taxa de quadros finita; a telemetria acrescenta vari\'aveis internas, mas n\~ao revela tudo (por exemplo, inten\c{c}\~ao ou comando efetivo de advers\'arios).
+  \item[Multiagente:] tr\^es rob\^os aliados e tr\^es advers\'arios atuam simultaneamente; cada equipe \`e cooperativa internamente e competitiva com a outra.
+  \item[Estoc\'astico:] atrito, colis\~oes, ru\'ido de vis\~ao, atraso e pequenas varia\c{c}\~oes de posicionamento tornam a transi\c{c}\~ao n\~ao determin\'istica na pr\'atica, ainda que o simulador seja reprodut\'ivel sob a mesma semente.
+  \item[Sequencial:] cada comando altera estados futuros; n\~ao \`e poss\'ivel avaliar uma a\c{c}\~ao isoladamente da trajet\'oria e do placar acumulado.
+  \item[Din\^amico:] bola e rob\^os continuam se movendo enquanto o agente calcula; a partida, o cron\^ometro e o advers\'ario mudam durante a decis\~ao.
+  \item[Cont\'inuo:] posi\c{c}\~oes, orienta\c{c}\~oes, velocidades, acelera\c{c}\~oes e tempo s\~ao grandezas cont\'inuas; mensagens e comandos s\~ao amostrados em instantes discretos.
+  \item[Conhecido para o modelo, parcialmente desconhecido para o agente:] regras, limites e geometria s\~ao conhecidos; par\^ametros efetivos de contato, estrat\'egia advers\'aria e ru\'ido precisam ser inferidos.
+  \item[Horizonte finito:] cada partida tem dois tempos regulamentares e um limite de decis\~oes; a fun\c{c}\~ao de utilidade combina resultado, saldo, seguran\c{c}a e comportamento.
+\end{description}
+
+\subsection{Sensores, observabilidade e lat\^encia}
+
+O sensor externo principal \`e a c\^amera superior. Ap\'os calibra\c{c}\~ao de homografia e segmenta\c{c}\~ao por cor, ela estima $(x,y)$ da bola e dos rob\^os e a orienta\c{c}\~ao por marcadores. Ela observa o campo inteiro, mas de forma parcial: oclus\~oes, reflexos, borramento, perda de quadros e ambiguidade de identidade degradam a estimativa. O simulador tamb\'em publica telemetria com posi\c{c}\~ao, orienta\c{c}\~ao, velocidade linear e angular de cada rob\^o, velocidade da bola, placar e passo. Essa telemetria \`e mais completa que a c\^amera, mas ainda \`e amostrada e n\~ao mede diretamente acelera\c{c}\~ao, inten\c{c}\~ao ou torque.
+
+O pr\'e-processamento deve: (i) sincronizar os rel\'ogios e descartar pacotes fora de ordem; (ii) converter pixels para metros e normalizar o referencial pelo lado de ataque; (iii) associar identidades por predi\c{c}\~ao e proximidade; (iv) filtrar posi\c{c}\~oes e velocidades com passa-baixas ou Kalman; (v) estimar acelera\c{c}\~ao por diferen\c{c}a regularizada; (vi) prever o estado no instante de atua\c{c}\~ao. Para um atraso total $\tau$ e velocidade $\vect v$, usa-se $\widehat{\vect p}(t+\tau)=\vect p(t)+\vect v(t)\tau+\frac12\vect a(t)\tau^2$. O controlador deve medir separadamente lat\^encia de captura, processamento, fila, rede e atuador; o horizonte de previs\~ao deve ser limitado para n\~ao amplificar ru\'ido. Se o prazo m\'aximo for excedido, aplica-se o \emph{failsafe} de velocidade zero ou o \`ultimo comando seguro.
+
+\subsection{Atuadores e controle de velocidade}
+
+Em uma equipe 3v3, o pacote de atua\c{c}\~ao possui seis sinais: $(\omega_{L,1},\omega_{R,1},\omega_{L,2},\omega_{R,2},\omega_{L,3},\omega_{R,3})$, em rad/s. Cada par controla as rodas esquerda e direita de um rob\^o diferencial. O campo vetorial fornece para o rob\^o $i$ uma velocidade planar desejada $\vect u_i=(u_{x,i},u_{y,i})$. Com $\theta_i$ medido no campo, a refer\^encia no eixo do rob\^o \`e
+
+\begin{equation}
+ v_i^*=\vect u_i\cdot(\cos\theta_i,\sin\theta_i),\qquad
+ \omega_i^*=k_\theta\,\operatorname{wrap}(\operatorname{atan2}(u_{y,i},u_{x,i})-\theta_i).
+\end{equation}
+
+Para raio de roda $r$ e separa\c{c}\~ao entre rodas $b$, a invers\~ao diferencial \`e
+
+\begin{equation}
+ \omega_{R,i}^*=\frac{v_i^*+\frac b2\omega_i^*}{r},\qquad
+ \omega_{L,i}^*=\frac{v_i^*-\frac b2\omega_i^*}{r}.
+\end{equation}
+
+Satura-se cada sinal em $[-\omega_{\max},\omega_{\max}]$ e aplica-se uma malha fechada: o erro de pose alimenta um PID ou controlador proporcional limitado, enquanto o vetor evolu\'ido permanece apenas como refer\^encia nominal. Uma rampa $|\Delta\omega|\leq a_\omega\Delta t$ evita trancos. O rob\^o reporta sua pose e velocidade; o controlador recalcula o vetor e as rodas a cada ciclo, compensando atraso e perturba\c{c}\~oes.
+
+\subsection{Comunica\c{c}\~ao de baixa lat\^encia}
+
+Vis\~ao e comandos usam UDP local ou uma rede isolada, com mensagens pequenas, identificador de sequ\^encia, timestamp monot\^onico e prazo de validade. O receptor descarta pacotes antigos, e o transmissor envia o \`ultimo comando em taxa fixa sem esperar confirma\c{c}\~ao; watchdog interrompe as rodas quando nenhum pacote v\'alido chega. Telemetria detalhada pode permanecer no supervisor/controlador, reduzindo o tr\'afego para o rob\^o a comandos e estados essenciais. Em hardware com processamento embarcado suficiente, filtragem, previs\~ao e convers\~ao diferencial podem ser executadas no pr\'oprio rob\^o; caso contr\'ario, o computador central calcula tudo e envia apenas os seis sinais. A escolha deve minimizar $\tau$ e sua vari\^ancia, pois um atraso imprevis\'ivel \`e mais danoso que um atraso constante.
+
+\subsection{Vari\'aveis derivadas}
+
+O protocolo n\~ao transmite diretamente as acelera\c{c}\~oes. Portanto, a acelera\c{c}\~ao de um objeto $o$ \'e estimada entre dois quadros:
+
+\begin{equation}
+  \widehat{\vect{a}}_o(k)
+  =\frac{\vect{v}_o(k)-\vect{v}_o(k-1)}{t_k-t_{k-1}+\varepsilon}.
+\end{equation}
+
+Em uma implementa\c{c}\~ao posterior, essa estimativa deve receber filtragem passa-baixas ou um estimador de estado, pois diferencia\c{c}\~ao num\'erica amplifica ru\'ido.
+
+O tempo restante tamb\'em n\~ao faz parte da mensagem de vis\~ao. O cliente mant\'em um cron\^ometro local iniciado junto com a estrat\'egia:
+
+\begin{equation}
+  T_r=\max(0,T_{\mathrm{configurado}}-T_{\mathrm{decorrido}}).
+\end{equation}
+
+Para torneios automatizados, o orquestrador deve reiniciar esse cron\^ometro a cada partida e fornecer a dura\c{c}\~ao oficial. O saldo de gols \'e calculado diretamente a partir dos campos de placar enviados pelo simulador.
+
+\subsection{Fluxo da integra\c{c}\~ao}
+
+Em cada quadro, o cliente executa:
+
+\begin{enumerate}
+  \item recebe e desserializa \texttt{Environment};
+  \item separa aliados e advers\'arios conforme a cor controlada;
+  \item estima as acelera\c{c}\~oes;
+  \item transforma o estado para o referencial can\^onico de ataque;
+  \item constr\'oi pontos, segmentos e vari\'aveis globais;
+  \item calcula o vetor nominal para cada aliado;
+  \item aplica limites e regras determin\'isticas de seguran\c{c}a;
+  \item converte o vetor em velocidades das rodas;
+  \item valida valores finitos e limites de velocidade;
+  \item serializa e envia o pacote de comandos.
+\end{enumerate}
+
+A cor amarela utiliza por padr\~ao a porta \texttt{20012}, e a azul utiliza \texttt{20013}. A dire\c{c}\~ao de ataque pode ser invertida por configura\c{c}\~ao, permitindo corrigir a conven\c{c}\~ao sem alterar as f\'ormulas.
+
+Na mudan\c{c}a do primeiro para o segundo tempo, a dire\c{c}\~ao de ataque troca de sinal. Seja $s_0\in\{-1,+1\}$ a orienta\c{c}\~ao inicial e $k\in\{0,1\}$ o \`indice do tempo regulamentar. A orienta\c{c}\~ao utilizada \'e
+
+\begin{equation}
+  s_k=(-1)^k s_0.
+\end{equation}
+
+As coordenadas dos campos dependentes do lado de ataque s\~ao refletidas por $x'=s_kx$ no referencial can\^onico. Isso se aplica \'a aproxima\c{c}\~ao da bola, aos gols e \'as refer\^encias t\'aticas de aliados e advers\'arios. Campos locais cuja defini\c{c}\~ao independe do sentido de ataque, como a repuls\~ao pela parede mais pr\'oxima, n\~ao precisam ser invertidos. O dashboard usa a mesma regra ao avan\c{c}ar o replay para o segundo tempo.
+
+\subsection{Organiza\c{c}\~ao do software}
+
+O reposit\'orio integrado mant\'em o TraveSim como base e adiciona o pacote \texttt{strategy/}. O n\'ucleo \'e dividido em:
+
+\begin{description}
+  \item[\texttt{model.py}] vetores, segmentos e estado da partida independentes do simulador;
+  \item[\texttt{fields.py}] primitivas de pontos, segmentos, bola, obst\'aculos e CPA;
+  \item[\texttt{controller.py}] composi\c{c}\~ao nominal e convers\~ao diferencial;
+  \item[\texttt{client.py}] adapta\c{c}\~ao UDP/VSSProto, placar, cron\^ometro e estima\c{c}\~ao de acelera\c{c}\~ao;
+  \item[\texttt{tests/}] testes matem\'aticos que n\~ao dependem do Webots.
+\end{description}
+
+Essa separa\c{c}\~ao permite executar milhares de avalia\c{c}\~oes matem\'aticas sem iniciar uma interface gr\'afica. Tamb\'em permite substituir as express\~oes determin\'isticas por indiv\'iduos evolu\'idos sem alterar a camada de comunica\c{c}\~ao.
+
+\subsection{Limites f\'isicos usados na integra\c{c}\~ao}
+
+O modelo padr\~ao do TraveSim utiliza raio de roda de $0{,}025$~m, separa\c{c}\~ao de $0{,}055$~m, velocidade angular m\'axima de roda pr\'oxima a $68$~rad/s e velocidade linear m\'axima aproximada de $1{,}7$~m/s. Esses valores s\~ao usados como limites iniciais do controlador, mas devem permanecer configur\'aveis para testes de transfer\^encia e modelos personalizados.
+
+\subsection{Execu\c{c}\~ao}
+
+Ap\'os instalar Webots, VSSProto e o pacote Python da estrat\'egia, uma partida 3v3 pode ser iniciada com:
+
+\begin{verbatim}
+webots worlds/Match3v3.wbt
+coach-silvs --team yellow
+\end{verbatim}
+
+Uma segunda inst\^ancia pode controlar a equipe azul:
+
+\begin{verbatim}
+coach-silvs --team blue
+\end{verbatim}
+
+Para treinamento, cada trabalhador deve usar portas exclusivas ou um ambiente de rede isolado. O orquestrador da programa\c{c}\~ao gen\'etica ser\'a respons\'avel por iniciar partidas, definir sementes, reposicionar entidades, encerrar a simula\c{c}\~ao, coletar placar e registrar colis\~oes.
+
+% ================================================================
+\section{Execu\c{c}\~ao paralela das gera\c{c}\~oes}
+% ================================================================
+
+O pacote da estrat\'egia fornece o comando \texttt{coach-silvs-evolve}. Ele centraliza no terminal as decis\~oes que definem um experimento evolutivo: popula\c{c}\~ao, paralelismo, cruzamento, sele\c{c}\~ao, sobreviv\^encia, muta\c{c}\~ao, parada antecipada e limites das f\'ormulas.
+
+O argumento \texttt{--field-strategy} seleciona a pol\'itica de compartilhamento dos campos. Em \texttt{individual}, cada rob\^o aliado evolui conjuntos pr\'oprios de blocos para aliados, advers\'arios, paredes e gols; o campo univetorial da bola permanece compartilhado. Em \texttt{shared}, todos os aliados reutilizam o mesmo conjunto, mas os blocos associados a aliados e advers\'arios continuam distintos e podem evoluir equa\c{c}\~oes diferentes. Nas duas arquiteturas, o rob\^o controlado \'e removido da lista de aliados antes da soma, portanto nunca sofre influ\^encia do campo gerado por seu pr\'oprio estado. O argumento \texttt{--robots-per-team} define se a topologia individual cria tr\^es ou cinco conjuntos.
+
+Uma execu\c{c}\~ao completa pode ser iniciada por:
+
+\begin{verbatim}
+coach-silvs-evolve run \
+  --competitors 32 \
+  --matches-per-pair 5 \
+  --workers 8 \
+  --generations 100 \
+  --breeding module \
+  --parent-selection tournament \
+  --survival elitism \
+  --elite-count 4 \
+  --survival-fraction 0.50 \
+  --mutation mixed \
+  --mutation-rate 0.15 \
+  --mutation-scale 0.12 \
+  --early-stopping patience \
+  --patience 12 \
+  --min-delta 0.5 \
+  --max-depth 8 \
+  --max-nodes 127 \
+  --max-constants 16 \
+  --max-constant 10 \
+  --max-evaluation-ms 2 \
+  --draw-penalty 1 \
+  --backend mock \
+  --seed 42 \
+  --output runs \
+  --run-name experiment-001
+\end{verbatim}
+
+O n\'umero de partidas por gera\c{c}\~ao \'e:
+
+\begin{equation}
+  N_{\mathrm{partidas}}=M\frac{N(N-1)}{2},
+\end{equation}
+
+em que $N$ \'e o n\'umero de competidores e $M$ \'e o n\'umero de partidas por par. O argumento \texttt{--workers} limita a quantidade de jogos simult\^aneos.
+
+\subsection{Estrat\'egias de reprodu\c{c}\~ao}
+
+As op\c{c}\~oes de \texttt{--breeding} s\~ao:
+
+\begin{description}
+  \item[\texttt{module}] troca m\'odulos completos ou regi\~oes cont\'iguas do genoma;
+  \item[\texttt{uniform}] escolhe cada bloco escalar de um dos dois pais;
+  \item[\texttt{blend}] interpola os par\^ametros escalares dos pais.
+\end{description}
+
+Os pais podem ser selecionados por torneio local, por probabilidade proporcional ao ranking ou a partir da metade superior da popula\c{c}\~ao.
+
+\subsection{Sobreviv\^encia e elitismo}
+
+As op\c{c}\~oes de \texttt{--survival} s\~ao elitismo, torneio e ranking. Com elitismo, os \texttt{--elite-count} melhores indiv\'iduos s\~ao copiados sem muta\c{c}\~ao. A fra\c{c}\~ao total de sobreviventes \'e controlada por \texttt{--survival-fraction}.
+
+\subsection{Muta\c{c}\~ao}
+
+As muta\c{c}\~oes dispon\'iveis s\~ao:
+
+\begin{itemize}
+  \item gaussiana sobre constantes;
+  \item deslocamento pontual;
+  \item reinicializa\c{c}\~ao de constantes;
+  \item altera\c{c}\~ao de sub\'arvore;
+  \item combina\c{c}\~ao das muta\c{c}\~oes num\'erica e estrutural.
+\end{itemize}
+
+A probabilidade \'e dada por \texttt{--mutation-rate}, e a intensidade num\'erica por \texttt{--mutation-scale}.
+
+\subsection{Parada antecipada}
+
+Com \texttt{--early-stopping patience}, a evolu\c{c}\~ao termina quando a melhor aptid\~ao n\~ao melhora pelo menos \texttt{--min-delta} durante \texttt{--patience} gera\c{c}\~oes. A op\c{c}\~ao \texttt{none} executa todas as gera\c{c}\~oes.
+
+\subsection{Limites das f\'ormulas}
+
+Para controlar \textit{bloat}, instabilidade e custo de execu\c{c}\~ao, o terminal permite definir:
+
+\begin{itemize}
+  \item profundidade m\'axima da \`arvore;
+  \item quantidade m\'axima de n\'os;
+  \item quantidade m\'axima de constantes ef\^emeras;
+  \item valor absoluto m\'aximo das constantes;
+  \item tempo m\'aximo pretendido para avaliar uma equa\c{c}\~ao.
+\end{itemize}
+
+As opera\c{c}\~oes protegidas, a limita\c{c}\~ao do vetor e a valida\c{c}\~ao de valores finitos continuam obrigat\'orias independentemente desses limites.
+
+\subsection{Artefatos de uma execu\c{c}\~ao}
+
+Cada experimento cria uma pasta pr\'opria contendo:
+
+\begin{itemize}
+  \item \texttt{config.json}, com todos os argumentos;
+  \item \texttt{candidates.json}, com os genomas;
+  \item \texttt{ranking.json}, com a classifica\c{c}\~ao atual;
+  \item \texttt{live.json}, com progresso e melhor candidato;
+  \item \texttt{generations/}, com os resultados de cada gera\c{c}\~ao;
+  \item \texttt{matches/}, com placar, sementes e quadros de cada jogo.
+\end{itemize}
+
+As partidas s\~ao imut\'aveis depois de gravadas. Isso permite reproduzir resultados e monitorar o torneio sem compartilhar mem\'oria com os processos de simula\c{c}\~ao.
+
+\subsection{Isolamento de partidas reais}
+
+Cada inst\^ancia paralela do Webots precisa de um mundo tempor\'ario com portas exclusivas para reposicionamento, equipes e vis\~ao. Tamb\'em precisa de dois processos de candidatos, diret\'orio de execu\c{c}\~ao isolado, tempo limite e encerramento garantido dos processos.
+
+Uma inst\^ancia headless pode ser iniciada por:
+
+\begin{verbatim}
+webots --batch --stdout --stderr --minimize worlds/Match3v3.wbt
+\end{verbatim}
+
+Na integra\c{c}\~ao Coach Silvs, o supervisor detecta a passagem completa da bola pela linha do gol, atualiza \texttt{goals\_blue} e \texttt{goals\_yellow}, restaura bola e rob\^os e encerra a simula\c{c}\~ao no tempo configurado. Cada partida escolhe uma forma\c{c}\~ao t\'atica de um cat\'alogo (balanceada, defensiva, ofensiva, aberta, compacta ou diagonal), espelha-a para o lado defendido e acrescenta pequenos desvios gaussianos limitados de posi\c{c}\~ao e orienta\c{c}\~ao. A forma\c{c}\~ao e a semente s\~ao gravadas junto ao replay.
+
+O backend \texttt{travesim} executa avalia\c{c}\~ao esportiva real e grava telemetria f\'isica em JSON Lines. Portas, mundo tempor\'ario e processos s\~ao isolados por partida; o multicast local usa a interface de loopback. O modo r\'apido inclui uma pequena janela de sincroniza\c{c}\~ao por passo para que clientes UDP externos recebam vis\~ao e devolvam comandos antes do pr\'oximo passo. O backend \texttt{mock} permanece restrito a testes r\'apidos de orquestra\c{c}\~ao e interface.
+
+O acompanhamento experimental pode ser conectado ao Weights \& Biases. A cada gera\c{c}\~ao s\~ao registrados melhor escore, vit\'orias, empates, derrotas, gols, saldo, m\'edia populacional e uma tabela de ranking. Tamb\'em s\~ao publicadas tabelas de genomas e de blocos de campos vetoriais (jogador, objeto, profundidade, n\'umero de n\'os, constantes, f\'ormula textual e \'arvore JSON), permitindo comparar e reproduzir a evolu\c{c}\~ao estrutural das f\'ormulas. Cada bloco \'e uma AST execut\'avel com operadores protegidos de soma, multiplica\c{c}\~ao, nega\c{c}\~ao, tangente hiperb\'olica e limita\c{c}\~ao; seus terminais incluem constantes, dist\^ancia normalizada, tempo restante, saldo de gols e sentido de ataque. O controlador e o dashboard avaliam a mesma \'arvore. As cole\c{c}\~oes tamb\'em s\~ao gravadas em \texttt{formulas.json} e \texttt{generations/formulas-NNNN.json}. Configura\c{c}\~ao, candidatos, gera\c{c}\~oes, f\'ormulas e ranking s\~ao publicados como artefato; replays completos somente quando solicitados. A autentica\c{c}\~ao usa exclusivamente a vari\'avel \texttt{WANDB\_API\_KEY}, e o modo \texttt{offline} permite validar a integra\c{c}\~ao sem envio externo.
+
+O comando \texttt{coach-silvs-live} inicia conjuntamente a evolu\c{c}\~ao f\'isica e o servidor do dashboard, for\c{c}ando \texttt{backend=travesim}. A interface fica dispon\'ivel enquanto o Webots executa, identifica a fonte como \texttt{TRAVESIM REAL} e incorpora automaticamente cada replay quando a telemetria final chega. Ao encerrar o launcher, partidas ainda ativas tamb\'em s\~ao finalizadas de forma controlada.
+
+O servidor tamb\'em pode ser iniciado separadamente com \texttt{coach-silvs-dashboard --run runs/<nome>}. Nesse modo ele somente l\^e os arquivos incrementais da execu\c{c}\~ao, podendo ser reiniciado ou atualizado durante uma simula\c{c}\~ao longa sem afet\'a-la. Para acesso remoto, a porta deve ficar restrita \`a interface privada da VPN.
+
+% ================================================================
+\section{Execu\c{c}\~ao distribu\'ida em VPN}
+% ================================================================
+
+As partidas de uma gera\c{c}\~ao s\~ao independentes e podem ser distribu\'idas entre computadores conectados por uma VPN privada. Um coordenador central mant\'em uma fila persistente em SQLite, enquanto cada computador colaborador executa um worker com capacidade configur\'avel. Para \texttt{workers}=N, o computador reserva no m\'aximo N partidas simultaneamente.
+
+Cada reserva possui um prazo de concess\~ao (\textit{lease}). Se um worker for desconectado, a concess\~ao expira e a partida retorna \`a fila. Identificadores determin\'isticos tornam a conclus\~ao idempotente, impedindo que resultados duplicados sejam contabilizados. O coordenador recebe apenas conex\~oes HTTP autenticadas por Bearer token e deve permanecer acess\'ivel exclusivamente no tailnet; o Webots e as portas UDP do TraveSim continuam locais em cada computador.
+
+O dashboard apresenta os slots conectados, partidas na fila, em execu\c{c}\~ao e conclu\'idas. Resultados s\~ao consumidos incrementalmente para evitar retransmitir replays extensos. Todos os workers devem usar a mesma revis\~ao do reposit\'orio, vers\~ao do Webots, regras e sementes. A documenta\c{c}\~ao operacional e a interface HTTP encontram-se em \texttt{docs/DISTRIBUTED.pt-br.md}.
+
+% ================================================================
+\section{Dashboard de monitoramento}
+% ================================================================
+
+O monitor \'e iniciado em outro terminal:
+
+\begin{verbatim}
+coach-silvs-dashboard \
+  --run runs/experiment-001 \
+  --host 127.0.0.1 \
+  --port 8080
+\end{verbatim}
+
+A interface fica dispon\'ivel em \url{http://127.0.0.1:8080} e atualiza suas informa\c{c}\~oes periodicamente. Ela apresenta:
+
+\begin{itemize}
+  \item estado da execu\c{c}\~ao e gera\c{c}\~ao atual;
+  \item quantidade de partidas conclu\'idas;
+  \item estimativa de tempo restante para a gera\c{c}\~ao atual e para toda a execu\c{c}\~ao;
+  \item melhor candidato e sua pontua\c{c}\~ao;
+  \item ranking com vit\'orias, empates, derrotas e saldo;
+  \item sele\c{c}\~ao e reprodu\c{c}\~ao visual de uma partida, com placar do quadro e resultado final destacados;
+  \item sele\c{c}\~ao e visualiza\c{c}\~ao do campo vetorial de um candidato;
+  \item estrutura e par\^ametros da f\'ormula selecionada.
+\end{itemize}
+
+O backend sint\'etico grava quadros de demonstra\c{c}\~ao no mesmo formato esperado do backend real. Assim, a interface de monitoramento permanece independente da forma como a partida foi executada. O inspetor permite selecionar a perspectiva de cada aliado mesmo na arquitetura compartilhada e, para campos de aliados ou advers\'arios, a inst\^ancia concreta que gera a influ\^encia. As posi\c{c}\~oes da bola e dos rob\^os s\~ao lidas do quadro selecionado na linha do tempo; portanto o campo, o sentido de ataque e o espelhamento mudam junto com o momento da partida. Quando a fonte aliada coincide com o rob\^o observado, o painel representa explicitamente o campo pr\'oprio exclu\'ido.
+
+No backend real, a telemetria parcial fica dispon\'ivel enquanto o Webots ainda executa a partida. O dashboard acompanha o quadro mais recente, apresenta placar e saldo e recalcula o campo selecionado a partir das posi\c{c}\~oes instant\^aneas. Os genomas s\~ao publicados antes do in\'icio dos jogos, portanto a inspe\c{c}\~ao n\~ao depende da conclus\~ao do ranking da gera\c{c}\~ao.
+
+As estimativas de tempo s\~ao calculadas a partir da vaz\~ao observada de partidas conclu\'idas, incluindo o paralelismo configurado. Elas s\~ao atualizadas a cada partida por padr\~ao e tendem a estabilizar durante a execu\c{c}\~ao. A estimativa total considera todas as gera\c{c}\~oes planejadas; portanto, o crit\'erio de parada antecipada pode finalizar o experimento antes do valor exibido.
+
+Ao iniciar uma nova gera\c{c}\~ao, a estimativa inicial reutiliza a vaz\~ao medida nas gera\c{c}\~oes anteriores. Para manter a interface responsiva, a telemetria JSONL \'e consumida incrementalmente a partir do \''ultimo byte processado, os replays s\~ao subamostrados somente para visualiza\c{c}\~ao e o ranking ao vivo consulta arquivos compactos de resumo. O modo \emph{Ao vivo} seleciona automaticamente a partida ativa mais recente; a sele\c{c}\~ao manual de um replay suspende esse acompanhamento at\'e nova ativa\c{c}\~ao do bot\~ao.
+
+A fun\c{c}\~ao de aptid\~ao das partidas f\'isicas tamb\'em subtrai penalidades comportamentais normalizadas em segundos-rob\^o. Considera-se parado o rob\^o cuja velocidade permanece abaixo de um limiar ap\'os um per\'iodo de toler\^ancia; considera-se preso aquele que permanece confinado em um pequeno raio durante uma janela temporal, embora ainda apresente movimento; e considera-se ocupa\c{c}\~ao do gol quando o centro do rob\^o permanece al\'em da linha de fundo e dentro da largura oficial do gol. Os tr\^es pesos, limiares e janelas s\~ao par\^ametros do experimento, e o dashboard exp\~oe tanto a penalidade total quanto a dura\c{c}\~ao atribu\'ida a cada causa.
+
+% ================================================================
+\section{Plano experimental}
+% ================================================================
+
+O desenvolvimento deve seguir etapas incrementais:
+
+\begin{enumerate}
+  \item validar campos manuais simples;
+  \item evoluir apenas constantes;
+  \item evoluir a estrutura do campo da bola;
+  \item adicionar aliados e advers\'arios;
+  \item adicionar segmentos e gols;
+  \item incorporar tempo e saldo de gols;
+  \item ativar coevolu\c{c}\~ao completa;
+  \item inserir randomiza\c{c}\~ao de dom\'inio;
+  \item testar as melhores estrat\'egias nos rob\^os reais.
+\end{enumerate}
+
+Experimentos de abla\c{c}\~ao removem individualmente acelera\c{c}\~ao, CPA, campo circular, mem\'oria de desvio, filtro de seguran\c{c}a, orienta\c{c}\~ao, estado da partida, Hall of Fame e penaliza\c{c}\~ao de complexidade.
+
+As m\'etricas incluem vit\'orias, saldo, empates, colis\~oes por minuto, dist\^ancia m\'inima, tempo at\'e a bola, efici\^encia de chute, suavidade, tamanho das f\'ormulas e tempo computacional.
+
+% ================================================================
+\section{Treino especializado por fun\c{c}\~ao}
+% ================================================================
+
+O treino de goleiros, defensores e atacantes utiliza ambientes separados, mas
+um mesmo protocolo experimental. Uma avalia\c{c}\~ao de candidato, denominada
+\textit{trial}, cont\'em dezenas de epis\'odios curtos. Entre epis\'odios, bola e
+jogador s\~ao reposicionados e a bola recebe uma velocidade inicial. Todos os
+candidatos da mesma gera\c{c}\~ao recebem a mesma lista pseudoaleat\'oria, o que
+reduz a vari\^ancia da compara\c{c}\~ao.
+
+A perda agregada combina resultado, qualidade de intercepta\c{c}\~ao, tempo de
+rea\c{c}\~ao e redirecionamento:
+\begin{equation}
+ \mathcal{L}=0{,}70L_{\mathrm{resultado}}+0{,}12L_{\mathrm{intercepta\c{c}\~ao}}
+ +0{,}08L_{\mathrm{rea\c{c}\~ao}}+0{,}10L_{\mathrm{redirecionamento}}.
+\end{equation}
+O resultado continua dominante, enquanto os demais termos fornecem informa\c{c}\~ao
+densa antes que o candidato consiga completar a tarefa. O dashboard especializado
+mostra a perda total e cada componente ao longo das gera\c{c}\~oes.
+
+A magnitude da velocidade desejada cresce suavemente com a dist\^ancia $d$:
+\begin{equation}
+ v_d=v_{\min}+(v_{\max}-v_{\min})(3q^2-2q^3),\qquad
+ q=\operatorname{clip}\left(\frac{d-d_{\min}}{d_{\max}-d_{\min}},0,1\right).
+\end{equation}
+Assim, o jogador acelera quando est\'a distante e preserva controle perto da bola.
+Uma estrat\'egia evolutiva diagonal adapta a m\'edia e a escala dos par\^ametros
+cont\'inuos $d_e$, $K_r$, $v_{\min}$, $v_{\max}$, $d_{\min}$ e $d_{\max}$.
+
+O ensaio de defensor possui dois backends intercambi\'aveis. O primeiro usa um
+modelo pontual determin\'istico para desenvolver rapidamente o otimizador. O
+segundo executa a f\'isica completa do Webots sem renderiza\c{c}\~ao. Neste modo,
+cada worker abre uma inst\^ancia persistente do simulador para um candidato; o
+supervisor reposiciona bola e defensor, aplica a velocidade inicial e mede todos
+os epis\'odios antes de encerrar a inst\^ancia. Isso preserva contatos, atrito e
+din\^amica das rodas, mas evita o custo de reiniciar o Webots a cada cen\'ario.
+Os dois backends gravam o mesmo esquema de perdas, par\^ametros e ranking, de
+modo que o dashboard identifica explicitamente a origem de cada resultado.
+Para limitar o volume de dados, a telemetria completa dos candidatos perdedores
+'e descartada depois do ranking. O replay f\'isico do melhor defensor de cada
+gera\c{c}\~ao permanece arquivado e pode ser escolhido, reproduzido e percorrido
+quadro a quadro no dashboard especializado. Um bot\~ao tamb\'em abre essa
+telemetria no mundo tridimensional do Webots: um supervisor de reprodu\c{c}\~ao
+move bola e rob\^os conforme os estados gravados, sem recalcular a f\'isica nem
+interferir nas inst\^ancias headless usadas pelo treinamento.
+
+No ambiente de defesa, os chutes cobrem dez faixas de mira dentro do gol aliado
+e cinco magnitudes de velocidade inicial entre $0{,}25$ e $1{,}25$ m/s. Ap\'os
+um passo de estabiliza\c{c}\~ao, o supervisor aplica por $30$ ms o impulso
+equivalente, incluindo a velocidade angular de rolamento
+$\boldsymbol{\omega}=(-v_y/r,v_x/r,0)$. Isso impede que o
+\texttt{resetPhysics} apague o chute e evita a dissipa\c{c}\~ao artificial que
+ocorreria se a esfera recebesse velocidade linear sem rota\c{c}\~ao compat\'ivel.
+
+% ================================================================
+\section{Pr\'e-requisitos para a equipe}
+% ================================================================
+
+Nem todos precisam dominar todos os t\'opicos. Para discutir a estrat\'egia, basta compreender o fluxo observa\c{c}\~ao--campo--comando, vetores bidimensionais, diferen\c{c}a entre ponto e segmento, estado da partida e princ\'ipios da evolu\c{c}\~ao.
+
+\subsection{N\'ivel 1: participa\c{c}\~ao nas discuss\~oes}
+
+\begin{itemize}
+  \item arquitetura do VSSS;
+  \item soma, norma e normaliza\c{c}\~ao de vetores;
+  \item posi\c{c}\~ao, velocidade e acelera\c{c}\~ao;
+  \item campos atrativos, repulsivos e circulares;
+  \item indiv\'iduo, popula\c{c}\~ao, fitness, muta\c{c}\~ao e cruzamento;
+  \item formato todos contra todos e penaliza\c{c}\~ao de empates.
+\end{itemize}
+
+\subsection{N\'ivel 2: desenvolvimento dos campos}
+
+\begin{itemize}
+  \item \`algebra linear e geometria anal\'itica;
+  \item referenciais e transforma\c{c}\~oes;
+  \item cinem\'atica diferencial;
+  \item proje\c{c}\~ao em segmentos;
+  \item previs\~ao e CPA;
+  \item controle em malha fechada;
+  \item programa\c{c}\~ao gen\'etica tipada.
+\end{itemize}
+
+\subsection{N\'ivel 3: seguran\c{c}a e pesquisa}
+
+\begin{itemize}
+  \item sistemas din\^amicos e estabilidade;
+  \item fun\c{c}\~oes de Lyapunov e de barreira;
+  \item otimiza\c{c}\~ao quadr\'atica;
+  \item planejamento cinodin\^amico;
+  \item coevolu\c{c}\~ao multiagente;
+  \item estat\'istica experimental.
+\end{itemize}
+
+% ================================================================
+\section{Trilha de estudo recomendada}
+% ================================================================
+
+\begin{enumerate}
+  \item vetores e produtos escalares no curso de \`algebra linear do MIT \cite{strang};
+  \item referenciais, cinem\'atica e controle em \textit{Modern Robotics} \cite{lynch2017};
+  \item planejamento no livro aberto de LaValle \cite{lavalle2006};
+  \item aplica\c{c}\~ao de campos vetoriais ao VSSS \cite{santos2019};
+  \item introdu\c{c}\~ao \`a programa\c{c}\~ao gen\'etica \cite{poli2008};
+  \item implementa\c{c}\~ao de regress\~ao simb\'olica e GP tipada com DEAP \cite{deap};
+  \item campo univetorial evolutivo \cite{lim2008};
+  \item campos n\~ao gradientes e din\^amicos \cite{panagou2014,he2022};
+  \item fun\c{c}\~oes de barreira para seguran\c{c}a \cite{ames2019};
+  \item RL pelo livro de Sutton e Barto \cite{sutton2018} e pelas aulas de David Silver \cite{silver2015}.
+\end{enumerate}
+
+% ================================================================
+\section{Conclus\~ao}
+% ================================================================
+
+A proposta combina campos vetoriais interpret\'aveis, programa\c{c}\~ao gen\'etica modular, competi\c{c}\~ao coevolutiva e seguran\c{c}a determin\'istica. Pontos m\'oveis utilizam previs\~ao, componentes radiais e tangenciais; segmentos utilizam proje\c{c}\~ao, normal, tangente e dist\^ancia livre. A bola e os gols recebem modelos orientados \`a tarefa, enquanto aliados e advers\'arios incorporam coordena\c{c}\~ao e risco de colis\~ao.
+
+O estado da partida permite que a equipe mude automaticamente entre posturas ofensivas e defensivas. A avalia\c{c}\~ao em cinco partidas contra todos os times reduz a influ\^encia do acaso, e o Hall of Fame reduz a especializa\c{c}\~ao na gera\c{c}\~ao atual. A camada de seguran\c{c}a preserva a liberdade t\'atica sem permitir que uma solu\c{c}\~ao evolu\'ida coloque os rob\^os em condi\c{c}\~oes perigosas.
+
+O resultado esperado \'e um conjunto de equa\c{c}\~oes compacto, analis\'avel e competitivo, capaz de produzir comportamentos que seriam dif\'iceis de projetar manualmente e que possam ser transferidos do simulador para a competi\c{c}\~ao real.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
