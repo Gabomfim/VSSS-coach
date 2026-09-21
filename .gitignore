@@ -12,6 +12,7 @@ role-runs/
 *.bbl
 *.blg
 *.out
+docs/overleaf/*.pdf
 *.toc
 *.zip
 .DS_Store
