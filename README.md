@@ -17,6 +17,9 @@ simulator setup and the replay controller used by the 3D dashboards.
 The research document and its bibliography live in
 [`docs/overleaf`](docs/overleaf/README.md); distributed worker setup is covered
 in [`docs/DISTRIBUTED.pt-br.md`](docs/DISTRIBUTED.pt-br.md).
+For an undergraduate-friendly introduction to the goalkeeper experiment, see
+the LaTeX source in
+[`docs/goalkeeper-training`](docs/goalkeeper-training/treinamento-goleiro.tex).
 
 ## Data flow
 

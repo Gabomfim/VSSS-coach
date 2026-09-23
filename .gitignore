@@ -7,6 +7,8 @@ __pycache__/
 htmlcov/
 runs/
 role-runs/
+output/
+tmp/
 *.log
 *.aux
 *.bbl

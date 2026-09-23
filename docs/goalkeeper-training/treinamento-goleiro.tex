@@ -1,0 +1,326 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\geometry{margin=2.15cm}
+\definecolor{azul}{HTML}{145DA0}
+\definecolor{azulescuro}{HTML}{0B3558}
+\definecolor{ciano}{HTML}{2E8BC0}
+\definecolor{verde}{HTML}{23856D}
+\definecolor{amarelo}{HTML}{E5A823}
+\definecolor{cinza}{HTML}{F1F5F8}
+\definecolor{texto}{HTML}{25313C}
+\hypersetup{colorlinks=true,linkcolor=azul,urlcolor=azul}
+\pagestyle{plain}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlist[itemize]{leftmargin=1.35em,itemsep=0.25em,topsep=0.25em}
+\newcommand{\destaque}[1]{\colorbox{cinza}{\parbox{0.94\linewidth}{#1}}}
+\newcommand{\termo}[1]{\textbf{\color{azulescuro}#1}}
+
+\begin{document}
+
+\pagenumbering{gobble}
+\begin{titlepage}
+  \pagecolor{azulescuro}\color{white}
+  \vspace*{2.1cm}
+  {\Huge\bfseries Treinamento de um Goleiro\par}
+  \vspace{0.25cm}
+  {\LARGE para Futebol de Robôs VSSS\par}
+  \vspace{0.65cm}
+  {\Large Campos vetoriais, controle e computação evolutiva\par}
+  \vfill
+  \begin{center}
+  \setlength{\unitlength}{1cm}
+  \begin{picture}(12,4.4)
+    \linethickness{1.2pt}
+    \put(0,0){\framebox(12,4.4){}}
+    \put(0,1.4){\line(-1,0){0.7}}
+    \put(-0.7,1.4){\line(0,1){1.6}}
+    \put(-0.7,3.0){\line(1,0){0.7}}
+    \put(1.05,1.25){\color{ciano}\rule{0.38cm}{1.9cm}}
+    \put(1.9,2.2){\vector(0,1){1.1}}
+    \put(1.9,2.2){\vector(0,-1){1.1}}
+    \put(8.8,3.25){\color{amarelo}\circle*{0.32}}
+    \put(8.5,3.05){\color{white}\vector(-4,-1){6.7}}
+    \put(4.7,3.65){\makebox(0,0){\small trajetória prevista da bola}}
+    \put(2.85,0.7){\makebox(0,0)[l]{\small linha de defesa}}
+  \end{picture}
+  \end{center}
+  \vfill
+  {\large Documento introdutório para estudantes de graduação\par}
+  {\normalsize Coach Silvs -- setembro de 2026\par}
+\end{titlepage}
+\nopagecolor\color{texto}
+\pagenumbering{arabic}
+
+\section*{Visão geral}
+
+O objetivo é treinar um robô para atuar como goleiro em uma partida de futebol
+VSSS. Ele deve permanecer diante do próprio gol, prever onde a bola cruzará sua
+linha de defesa e chegar a esse ponto a tempo. O treinamento não ensina cada
+comando de roda diretamente. Em vez disso, procura bons valores para os
+parâmetros de uma estratégia já estruturada.
+
+\destaque{\textbf{Ideia central.} Um campo vetorial sugere para onde o robô deve
+se mover. Um controlador transforma essa sugestão em velocidades das rodas. A
+computação evolutiva testa várias configurações, conserva as melhores e gera
+novas tentativas.}
+
+O processo usa o Webots/TraveSim para simular a física. Cada candidato enfrenta
+o mesmo conjunto de chutes: posições variadas da bola e do goleiro, diferentes
+direções e cinco velocidades iniciais. Assim, uma configuração não ganha apenas
+por ter recebido chutes mais fáceis.
+
+\section{O que é um campo vetorial?}
+
+Imagine pequenas setas desenhadas em muitos pontos do campo. Em cada posição
+$\mathbf{p}=(x,y)$, uma função fornece uma seta
+
+\[
+  \mathbf{F}(\mathbf{p}) = \bigl(F_x(\mathbf{p}),F_y(\mathbf{p})\bigr).
+\]
+
+A direção da seta indica o sentido desejado do movimento; seu comprimento pode
+representar a intensidade. O robô não precisa planejar uma trajetória completa
+de uma só vez: ele observa o estado atual, consulta o campo, move-se um pouco e
+repete o cálculo.
+
+No goleiro, o campo mais importante é o de \termo{interceptação preditiva}. Em
+vez de apontar para a posição atual da bola, ele aponta para a posição na qual a
+bola provavelmente cruzará uma linha diante do gol. Com posição $\mathbf{b}$,
+velocidade $\mathbf{v}$ e aceleração $\mathbf{a}$ da bola, a previsão simples é
+
+\[
+  \mathbf{b}(t)=\mathbf{b}_0+\mathbf{v}_0t+\tfrac12\mathbf{a}t^2.
+\]
+
+O instante positivo em que a coordenada horizontal atinge a linha do goleiro é
+estimado. A coordenada vertical prevista é limitada ao espaço útil entre as
+traves, com uma margem de segurança. O vetor desejado é então
+
+\[
+  \mathbf{F}_{\mathrm{int}}=
+  \frac{\mathbf{p}_{a}-\mathbf{p}_{r}}
+       {\lVert\mathbf{p}_{a}-\mathbf{p}_{r}\rVert},
+\]
+
+em que os índices $a$ e $r$ representam alvo e robô.
+
+Se a bola não estiver indo em direção ao gol, o goleiro continua próximo de sua
+linha, em vez de persegui-la pelo campo.
+
+\section{Como o goleiro permanece paralelo ao gol}
+
+A linha de defesa é vertical no referencial do simulador e fica alguns
+centímetros à frente da linha do gol. A orientação desejada do chassi é
+90 graus: assim, as rodas ficam alinhadas para o robô avançar ou recuar ao
+longo dessa linha sem precisar girar a cada mudança de direção.
+
+\begin{center}
+\setlength{\unitlength}{0.85cm}
+\begin{picture}(15,5.0)
+  \put(0.3,0.4){\framebox(14.2,4.2){}}
+  \put(0.3,1.5){\line(-1,0){0.8}}
+  \put(-0.5,1.5){\line(0,1){2.0}}
+  \put(-0.5,3.5){\line(1,0){0.8}}
+  \put(1.25,0.8){\color{ciano}\line(0,1){3.4}}
+  \put(1.25,4.35){\makebox(0,0){\small linha de defesa}}
+  \put(1.0,2.05){\color{azul}\rule{0.5cm}{1.05cm}}
+  \put(1.9,2.55){\color{azul}\vector(0,1){1.15}}
+  \put(1.9,2.55){\color{azul}\vector(0,-1){1.15}}
+  \put(11.8,3.7){\color{amarelo}\circle*{0.34}}
+  \put(11.5,3.55){\color{amarelo}\vector(-4,-1){9.2}}
+  \put(2.25,1.2){\color{verde}\circle*{0.22}}
+  \put(2.1,1.3){\color{verde}\vector(-1,3){0.7}}
+  \put(5.2,0.65){\makebox(0,0){\small alvo previsto e limitado entre as traves}}
+\end{picture}
+\end{center}
+
+O controle ocorre em duas etapas:
+
+\begin{enumerate}[leftmargin=1.5em,itemsep=0.3em]
+  \item Se o robô estiver fora da linha por mais de $1{,}5$ cm, ele primeiro
+  corrige esse erro transversal.
+  \item Na linha, ele escolhe avançar ou recuar pelo caminho que exige a menor
+  correção angular. Se estiver desalinhado por mais de 5 graus, para a
+  translação e corrige a orientação antes de continuar.
+\end{enumerate}
+
+Para um robô diferencial, velocidade linear $v$ e angular $\omega$ viram
+velocidades das rodas:
+
+\[
+ \omega_L=\frac{v-\tfrac{d}{2}\omega}{r},\qquad
+ \omega_R=\frac{v+\tfrac{d}{2}\omega}{r},
+\]
+
+onde $r$ é o raio da roda e $d$ é a distância entre rodas. Os comandos são
+limitados pela capacidade física. Após contato com a bola, o goleiro espera um
+pequeno tempo ajustável, mantém contato e executa um giro de $180^\circ$ para
+afastá-la. Uma histerese impede que esse giro seja disparado repetidamente.
+
+\section{Como são criados os testes}
+
+Cada cenário define posição inicial da bola, posição do goleiro, direção do
+chute, velocidade inicial e duração. Os chutes miram diferentes pontos da boca
+do gol e usam velocidades entre $0{,}75$ e $2{,}00$ m/s. O goleiro começa em
+posições variadas ao longo de sua linha.
+
+Cenários impossíveis são rejeitados durante o treinamento. Uma verificação
+conservadora considera tempo de reação de $150$ ms, aceleração máxima de
+$2{,}5$ m/s$^2$, velocidade máxima de $1{,}7$ m/s e margem física de contato.
+Isso evita punir um candidato por uma defesa que nenhum robô poderia realizar.
+Depois do aprendizado, cenários mais difíceis podem ser usados para avaliar
+robustez.
+
+\destaque{Todos os candidatos de uma geração recebem exatamente os mesmos
+cenários, definidos por uma semente aleatória registrada. Essa comparação justa
+é chamada, em estatística computacional, de uso de números aleatórios comuns.}
+
+\section{Função de perda}
+
+Uma \termo{perda} é um número que queremos minimizar. Zero é melhor. Para cada
+chute são calculados quatro componentes entre 0 e 1:
+
+\begin{tabularx}{\linewidth}{>{\bfseries\raggedright\arraybackslash}p{3.6cm} X p{1.3cm}}
+\toprule
+Componente & Interpretação & Peso \\
+\midrule
+Resultado & 1 se o goleiro sofre gol; 0 caso contrário. & 70\% \\
+Interceptação & Menor distância entre robô e bola, normalizada por 0,75 m. & 12\% \\
+Reação & Tempo até o contato dividido pela duração do cenário. & 8\% \\
+Redirecionamento & 0 se o contato muda a trajetória da bola; 1 se não muda. & 10\% \\
+\bottomrule
+\end{tabularx}
+
+\[
+\boxed{L=0{,}70L_{\mathrm{res}}+0{,}12L_{\mathrm{int}}
++0{,}08L_{\mathrm{rea}}+0{,}10L_{\mathrm{red}}}
+\]
+
+O peso maior está no que realmente importa: não sofrer gol. Os outros termos
+dão informação mesmo quando dois candidatos obtêm o mesmo resultado. Por
+exemplo, entre dois goleiros que defenderam, favorece-se aquele que chegou mais
+perto, reagiu antes e afastou a bola.
+
+\textbf{Cuidado ao interpretar zero.} $L_{\mathrm{res}}=0$ significa que
+nenhum gol foi sofrido nos cenários avaliados. Isso não prova que todas as bolas
+foram tocadas, pois um chute pode errar o gol. Já a perda total dificilmente é
+zero, porque distância e tempo de reação continuam positivos. O valor usado por
+uma geração é a média das perdas de todos os seus cenários.
+
+\section{O que é otimizado}
+
+O algoritmo não inventa todo o controlador. Ele ajusta parâmetros contínuos,
+dentro de limites seguros:
+
+\small
+\begin{tabularx}{\linewidth}{>{\bfseries\raggedright\arraybackslash}p{3.4cm} X}
+\toprule
+Grupo & Função e limites principais \\
+\midrule
+Campo univetorial & Curvatura e suavidade da aproximação: raio de 0,04--0,30 m e suavidade de 0,01--0,30. \\
+Perfil de velocidade & Velocidades perto/longe (0,15--2,50 m/s) e distâncias de transição (0,03--1,40 m). \\
+Previsão & Horizonte temporal de 0,20--2,50 s e linha a 0,045--0,090 m do gol. \\
+Interceptação & Margem das traves de 0--0,12 m, ganho de 0,20--3,00, mistura e velocidade mínima da ameaça. \\
+Antecipação dinâmica & Ganhos de velocidade, aceleração e urgência de 0--1,50; folga temporal de 0--0,35 s. \\
+Rebatida & Espera de 0,02--0,30 s entre contato e giro de afastamento. \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+O campo de corredor defensivo também possui ganho ajustável, embora seja mais
+importante para o defensor. Limites evitam soluções perigosas ou incompatíveis
+com a física. Regras de segurança, saturação das rodas e validação numérica não
+são evoluídas.
+
+\section{Computação evolutiva, sem mistério}
+
+Computação evolutiva procura soluções por população. Cada candidato é um vetor
+com todos os parâmetros acima. O ciclo é:
+
+\begin{center}
+\fcolorbox{azul}{cinza}{\parbox{0.88\linewidth}{
+\centering
+\textbf{1. gerar candidatos} $\rightarrow$
+\textbf{2. simular os mesmos chutes} $\rightarrow$
+\textbf{3. medir a perda}\\[0.4em]
+$\rightarrow$ \textbf{4. selecionar os melhores} $\rightarrow$
+\textbf{5. recombinar e variar} $\rightarrow$ nova geração
+}}
+\end{center}
+
+No método utilizado, o melhor quarto da população recebe pesos maiores. A média
+ponderada desses candidatos vira o centro da próxima busca. Cada parâmetro tem
+seu próprio desvio padrão: se os bons candidatos ainda são variados naquele
+parâmetro, a busca continua ampla; se concordam, ela se concentra. Um piso de
+1\% da faixa mantém exploração.
+
+Há também um \termo{modelo substituto}: uma regressão linear com regularização
+ridge aprende localmente a relação entre parâmetros testados e perdas medidas.
+Ela sugere uma pequena mudança da média na direção de menor perda. É um atalho
+para gastar menos simulações, não uma substituição da física.
+
+\destaque{O método é melhor descrito como \textbf{estratégia evolutiva diagonal
+adaptativa assistida por modelo substituto}. Não é aprendizado por reforço e não
+há retropropagação através do Webots. Também não é programação genética em
+sentido estrito, pois são evoluídos números de equações fixas, e não árvores de
+expressões.}
+
+\section{Como acompanhar e interpretar}
+
+O dashboard mostra perda total por geração, cada componente separadamente,
+ranking e reprodução do melhor candidato. O esperado é uma tendência de queda,
+mas pequenas oscilações são normais: a população continua explorando e a física
+tem variações. É importante observar simultaneamente:
+
+\begin{itemize}
+  \item a perda de resultado, para saber quantos gols passaram;
+  \item distância e reação, para detectar progresso antes de uma defesa perfeita;
+  \item redirecionamento, para evitar que a bola permaneça perigosa diante do gol;
+  \item vídeos com os mesmos cenários, evitando comparações visuais injustas.
+\end{itemize}
+
+Os vídeos ``antes e depois'' usam as trajetórias originais gravadas no treino.
+Quando cada tentativa recebe a mesma duração, uma defesa rápida não encurta um
+lado do vídeo. Uma nova simulação deve ser identificada como reavaliação, pois
+ela pode produzir resultado ligeiramente diferente.
+
+\section*{Resumo em cinco ideias}
+\begin{enumerate}[leftmargin=1.6em]
+  \item O campo vetorial transforma o estado da partida em uma direção desejada.
+  \item A posição futura da bola define um alvo sobre uma linha diante do gol.
+  \item Um controle diferencial mantém o chassi paralelo e move o robô para
+  frente ou para trás nessa linha.
+  \item A perda combina não sofrer gol com chegar perto, reagir cedo e afastar a bola.
+  \item A evolução ajusta parâmetros; o modelo substituto ajuda a escolher
+  regiões promissoras, sempre confirmadas pela simulação física.
+\end{enumerate}
+
+\section*{Referências para continuar}
+\begin{itemize}
+  \item Y. Lim et al. \emph{Evolutionary Univector Field-based Navigation with
+  Collision Avoidance for Mobile Robot}. IFAC World Congress, 2008.
+  \item S. Russell e P. Norvig. \emph{Artificial Intelligence: A Modern
+  Approach}, 4ª edição. Pearson, 2021.
+  \item Futebol Mini. \emph{TraveSim: Webots Simulation Environment for IEEE
+  Very Small Size Soccer}. \url{https://github.com/futebol-mini/travesim}.
+\end{itemize}
+
+\vfill
+\begin{center}\small
+Documento conceitual do projeto Coach Silvs. Os valores apresentados refletem
+a configuração atual do treinamento e podem evoluir com novos experimentos.
+\end{center}
+
+\end{document}
