@@ -173,7 +173,8 @@ Posição neutra & Mantém o goleiro diante da boca do gol. & Sem ameaça válid
 O corredor defensivo também possui ganho ajustável, mas é usado principalmente
 no defensor. Para o goleiro predominam interceptação, retorno e rebatida.
 
-Na prática, essas camadas formam uma pequena máquina de estados. Durante uma
+Na prática, essas camadas formam uma pequena \termo{state machine} (máquina de
+estados). Durante uma
 ameaça, a interceptação escolhe o alvo, enquanto o controlador ainda corrige a
 orientação. Após o contato, a rebatida suspende temporariamente o alinhamento;
 quando termina, o retorno recupera a linha. Segurança e limites vencem todos os
@@ -258,18 +259,19 @@ $1{,}7$ m/s. O controlador pode pedir mais, mas os limites do robô reduzem o
 comando.
 
 \destaque{Todos os candidatos de uma geração recebem exatamente os mesmos
-cenários, definidos por uma semente aleatória registrada. Essa comparação justa
-é chamada, em estatística computacional, de uso de números aleatórios comuns.}
+cenários, definidos por uma \termo{seed} (semente aleatória) registrada. Essa
+comparação justa é chamada, em estatística computacional, de
+\emph{common random numbers} (CRN).}
 
 Na execução atual, esse conjunto permanece fixo durante todas as gerações de
 uma mesma execução. Assim, a melhora não pode ser explicada pela troca dos
-chutes. Ao final, recomenda-se uma validação com outra semente, nunca vista no
+chutes. Ao final, recomenda-se uma validação com outra \emph{seed}, nunca vista no
 treinamento, para verificar se o goleiro aprendeu uma regra geral em vez de
 decorar os casos.
 
-\section{Função de perda}
+\section{Loss (função de perda)}
 
-Uma \termo{perda} é um número que queremos minimizar. Zero é melhor. Para cada
+Uma \termo{loss} é um número que queremos minimizar. Zero é melhor. Para cada
 chute são calculados quatro componentes entre 0 e 1:
 
 \begin{tabularx}{\linewidth}{>{\bfseries\raggedright\arraybackslash}p{3.6cm} X p{1.3cm}}
@@ -288,7 +290,8 @@ Redirecionamento & 0 se o contato muda a trajetória da bola; 1 se não muda. & 
 +0{,}08L_{\mathrm{rea}}+0{,}10L_{\mathrm{red}}}
 \]
 
-O peso maior está no que realmente importa: não sofrer gol. Os outros termos
+O peso maior está no que realmente importa: não sofrer gol. Os outros termos da
+\emph{loss}
 dão informação mesmo quando dois candidatos obtêm o mesmo resultado. Por
 exemplo, entre dois goleiros que defenderam, favorece-se aquele que chegou mais
 perto, reagiu antes e afastou a bola.
@@ -302,9 +305,9 @@ teve sorte porque o chute saiu para fora.
 
 \textbf{Cuidado ao interpretar zero.} $L_{\mathrm{res}}=0$ significa que
 nenhum gol foi sofrido nos cenários avaliados. Isso não prova que todas as bolas
-foram tocadas, pois um chute pode errar o gol. Já a perda total dificilmente é
+foram tocadas, pois um chute pode errar o gol. Já a \emph{loss} total dificilmente é
 zero, porque distância e tempo de reação continuam positivos. O valor usado por
-uma geração é a média das perdas de todos os seus cenários. Por isso, a análise
+uma geração é a média dos valores de \emph{loss} de todos os seus cenários. Por isso, a análise
 deve separar gols sofridos, contatos ou defesas e chutes que erraram o alvo.
 
 \section{O que é otimizado}
@@ -356,7 +359,7 @@ geração, várias receitas são testadas nos mesmos chutes. O ciclo é:
 \centering
 \textbf{1. gerar candidatos} $\rightarrow$
 \textbf{2. simular os mesmos chutes} $\rightarrow$
-\textbf{3. medir a perda}\\[0.4em]
+\textbf{3. medir a loss}\\[0.4em]
 $\rightarrow$ \textbf{4. selecionar os melhores} $\rightarrow$
 \textbf{5. recombinar e variar} $\rightarrow$ nova geração
 }}
@@ -368,10 +371,11 @@ seu próprio desvio padrão: se os bons candidatos ainda são variados naquele
 parâmetro, a busca continua ampla; se concordam, ela se concentra. Um piso de
 1\% da faixa mantém exploração.
 
-Há também um \termo{modelo substituto}: uma regressão linear com regularização
-ridge aprende localmente a relação entre parâmetros testados e perdas medidas.
+Há também um \termo{surrogate model} (modelo substituto): uma regressão linear
+com regularização \emph{Ridge} aprende localmente a relação entre parâmetros
+testados e valores de \emph{loss}.
 Ela funciona como um mapa aproximado da região já explorada e sugere uma
-pequena mudança da média na direção de menor perda. É um atalho
+pequena mudança da média para reduzir a \emph{loss}. É um atalho
 para gastar menos simulações, não uma substituição da física.
 
 Como exemplo de escala, uma execução com 32 candidatos, 30 chutes e 16 gerações
@@ -379,15 +383,15 @@ avalia $32\times30\times16=15\,360$ cenários. É por isso que executar cenário
 em paralelo e aproveitar o mapa aproximado pode economizar bastante tempo.
 
 \destaque{O método é melhor descrito como \textbf{estratégia evolutiva diagonal
-adaptativa assistida por modelo substituto}. Não é aprendizado por reforço e não
+adaptativa assistida por \emph{surrogate model}}. Não é aprendizado por reforço e não
 há retropropagação através do Webots. Também não é programação genética em
 sentido estrito, pois são evoluídos números de equações fixas, e não árvores de
 expressões.}
 
 \section{Como acompanhar e interpretar}
 
-O dashboard mostra perda total por geração, cada componente separadamente,
-ranking e reprodução do melhor candidato. O esperado é uma tendência de queda,
+O \emph{dashboard} mostra a \emph{loss} total por geração, cada componente
+separadamente, o \emph{ranking} e o \emph{replay} do melhor candidato. O esperado é uma tendência de queda,
 mas pequenas oscilações são normais: a população continua explorando e a física
 tem variações. É importante observar simultaneamente:
 
@@ -395,13 +399,13 @@ tem variações. É importante observar simultaneamente:
 \includegraphics[width=0.98\linewidth]{docs/goalkeeper-training/perdas-dashboard.png}
 
 \small\textbf{Figura 2 --} Exemplo real de acompanhamento. No painel esquerdo,
-a perda total cai bastante. No painel direito, a perda de resultado chega perto
+a \emph{loss} total cai bastante. No painel direito, a \emph{outcome loss} chega perto
 de zero, enquanto a reação permanece como o componente mais alto; esse é um
 sinal de que ainda há espaço para antecipar o contato.
 \end{center}
 
 \begin{itemize}
-  \item a perda de resultado, para saber quantos gols passaram;
+  \item a \emph{loss} de resultado, para saber quantos gols passaram;
   \item distância e reação, para detectar progresso antes de uma defesa perfeita;
   \item redirecionamento, para evitar que a bola permaneça perigosa diante do gol;
   \item vídeos com os mesmos cenários, evitando comparações visuais injustas.
@@ -418,8 +422,8 @@ ela pode produzir resultado ligeiramente diferente.
   \item A posição futura da bola define um alvo sobre uma linha diante do gol.
   \item Um controle diferencial mantém o chassi paralelo e move o robô para
   frente ou para trás nessa linha.
-  \item A perda combina não sofrer gol com chegar perto, reagir cedo e afastar a bola.
-  \item A evolução ajusta parâmetros; o modelo substituto ajuda a escolher
+  \item A \emph{loss} combina não sofrer gol com chegar perto, reagir cedo e afastar a bola.
+  \item A evolução ajusta parâmetros; o \emph{surrogate model} ajuda a escolher
   regiões promissoras, sempre confirmadas pela simulação física.
 \end{enumerate}
 
