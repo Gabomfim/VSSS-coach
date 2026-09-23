@@ -22,7 +22,9 @@ The research document and its bibliography live in
 in [`docs/DISTRIBUTED.pt-br.md`](docs/DISTRIBUTED.pt-br.md).
 For an undergraduate-friendly introduction to the goalkeeper experiment, see
 the LaTeX source in
-[`docs/goalkeeper-training`](docs/goalkeeper-training/treinamento-goleiro.tex).
+[`docs/goalkeeper-training`](docs/goalkeeper-training/treinamento-goleiro.tex)
+or download the compiled
+[`treinamento-goleiro-vsss.pdf`](output/pdf/treinamento-goleiro-vsss.pdf).
 
 ## Data flow
 
