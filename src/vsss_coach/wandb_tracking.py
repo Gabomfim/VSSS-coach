@@ -103,7 +103,7 @@ class WandbTracker:
     def finish(self, run_dir: Path, log_matches: bool = False) -> None:
         if self.run is None or self.wandb is None:
             return
-        artifact = self.wandb.Artifact(f"{run_dir.name}-results", type="coach-silvs-run")
+        artifact = self.wandb.Artifact(f"{run_dir.name}-results", type="vsss-coach-run")
         for name in ("config.json", "live.json", "ranking.json", "candidates.json", "formulas.json", "baseline.json", "baseline-evaluations.json"):
             path = run_dir / name
             if path.exists():

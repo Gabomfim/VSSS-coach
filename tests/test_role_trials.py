@@ -9,22 +9,22 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from coach_silvs.role_dashboard import HTML, estimate_eta, render_replay_world
-from coach_silvs.client import (
+from vsss_coach.role_dashboard import HTML, estimate_eta, render_replay_world
+from vsss_coach.client import (
     GoalkeeperSpinTracker, StateEstimator, build_parser as build_client_parser,
 )
-from coach_silvs.controller import VectorFieldStrategy
-from coach_silvs.role_trials import (
+from vsss_coach.controller import VectorFieldStrategy
+from vsss_coach.role_trials import (
     BOUNDS, RoleCandidate, build_parser, evaluate_trial, generate_scenarios, run,
     scenario_is_reachable, speed_profile, surrogate_refine_mean,
 )
-from coach_silvs.role_travesim import RoleTraveSimConfig, run_physical_trial
-from coach_silvs.goalkeeper_compare import compose, synchronize_shots, training_replay
-from coach_silvs.fields import (
+from vsss_coach.role_travesim import RoleTraveSimConfig, run_physical_trial
+from vsss_coach.goalkeeper_compare import compose, synchronize_shots, training_replay
+from vsss_coach.fields import (
     ally_goal_ball_corridor_field, earliest_reachable_interception_field,
     interception_crossing_time, interception_speed, predictive_interception_field,
 )
-from coach_silvs.model import BallState, RobotState, Vec2
+from vsss_coach.model import BallState, RobotState, Vec2
 
 
 class RoleTrialTests(unittest.TestCase):
@@ -65,7 +65,7 @@ class RoleTrialTests(unittest.TestCase):
         config = RoleTraveSimConfig(".", "webots", retries=2)
         expected = {"candidate_id": "candidate", "loss": 0.1}
         with patch(
-            "coach_silvs.role_travesim._run_physical_trial_once",
+            "vsss_coach.role_travesim._run_physical_trial_once",
             side_effect=[__import__("subprocess").TimeoutExpired("webots", 1), expected],
         ) as attempt:
             self.assertEqual(run_physical_trial(("goalkeeper", None, [], 0, config)), expected)
@@ -75,7 +75,7 @@ class RoleTrialTests(unittest.TestCase):
         config = RoleTraveSimConfig(".", "webots", retries=1)
         expected = {"candidate_id": "candidate", "loss": 0.1}
         with patch(
-            "coach_silvs.role_travesim._run_physical_trial_once",
+            "vsss_coach.role_travesim._run_physical_trial_once",
             side_effect=[ValueError("VssReferee block not found in world template"), expected],
         ) as attempt:
             self.assertEqual(run_physical_trial(("goalkeeper", None, [], 0, config)), expected)
@@ -205,7 +205,7 @@ class RoleTrialTests(unittest.TestCase):
         self.assertEqual(candidate.contact_spin_delay * 1000, 175)
 
     def test_impossible_last_moment_shot_is_rejected(self) -> None:
-        from coach_silvs.role_trials import Scenario
+        from vsss_coach.role_trials import Scenario
         impossible = Scenario(0, (-0.70, 0.0), (0.70, 0.50), (-1.25, 0.0), 3.0)
         self.assertFalse(scenario_is_reachable(impossible))
 

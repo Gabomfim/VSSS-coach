@@ -138,7 +138,7 @@ def _run_physical_trial_once(payload: tuple[str, Any, list[Any], int, RoleTraveS
         world = re.sub(r'(  vision_interface_address "127\.0\.0\.1"\n)', rf'\1  role_scenarios_path "{scenario_path.as_posix()}"\n  role_results_path "{results_path.as_posix()}"\n', world, count=1)
         world_path = root / "worlds" / f".coach-role-{os.getpid()}-{worker_index}.wbt"
         world_path.write_text(world, encoding="utf-8")
-        common = [sys.executable, "-m", "coach_silvs.client", "--team", "blue", "--vision-port", str(ports[3]), "--vision-interface", "127.0.0.1", "--command-port", str(ports[2]), "--attack-sign", "1", "--match-duration", "100000", "--candidate", str(candidate_path), "--role", role, "--active-robot-id", "0"]
+        common = [sys.executable, "-m", "vsss_coach.client", "--team", "blue", "--vision-port", str(ports[3]), "--vision-interface", "127.0.0.1", "--command-port", str(ports[2]), "--attack-sign", "1", "--match-duration", "100000", "--candidate", str(candidate_path), "--role", role, "--active-robot-id", "0"]
         client = subprocess.Popen(common, cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         webots = subprocess.Popen([config.webots, "--batch", f"--mode={config.webots_mode}", "--no-rendering", str(world_path)], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, start_new_session=True)
         try:

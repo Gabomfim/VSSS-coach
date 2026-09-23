@@ -5,9 +5,8 @@ experiment dashboards, and VSSS tooling. TraveSim is an external simulator:
 this repository connects to a separate TraveSim checkout through VSSProto and
 the `--travesim-root` option.
 
-The repository is named `VSSS-coach`. The Python package `coach_silvs` and the
-existing `coach-silvs-*` commands are retained for backward compatibility with
-recorded experiments and automation scripts.
+The repository and distribution are named `VSSS-coach`. The Python package is
+`vsss_coach`, and command-line entry points use the `vsss-coach-*` prefix.
 
 The separation is intentional:
 
@@ -129,14 +128,14 @@ webots /path/to/travesim/worlds/Match3v3.wbt
 Start one team in another terminal:
 
 ```bash
-coach-silvs --team yellow
+vsss-coach --team yellow
 ```
 
 Select the vector-field architecture explicitly with `--field-strategy`:
 
 ```bash
-coach-silvs --team yellow --field-strategy individual
-coach-silvs --team yellow --field-strategy shared
+vsss-coach --team yellow --field-strategy individual
+vsss-coach --team yellow --field-strategy shared
 ```
 
 Both architectures exclude the controlled robot from its own vector-field
@@ -147,7 +146,7 @@ learned blocks for allied robots and enemy robots.
 For the blue team:
 
 ```bash
-coach-silvs --team blue
+vsss-coach --team blue
 ```
 
 The defaults follow TraveSim:
@@ -158,13 +157,13 @@ The defaults follow TraveSim:
 | Yellow commands | `127.0.0.1` | `20012` |
 | Blue commands | `127.0.0.1` | `20013` |
 
-Use `coach-silvs --help` to override endpoints, match duration, wheel limits, and attack direction.
+Use `vsss-coach --help` to override endpoints, match duration, wheel limits, and attack direction.
 
 ## Official environment and match rules
 
 The default `robocore-vsss-2025` ruleset reproduces RoboCore Mini/VSSS rules
 version 3.0, revised on 2025-05-27. Its source of truth is
-`coach_silvs/rules.py`, and every evolutionary run records a complete copy in
+`vsss_coach/rules.py`, and every evolutionary run records a complete copy in
 `config.json`.
 
 Main SI-unit defaults are: a `1.50 x 1.30 m` field, `0.40 x 0.10 m` goals,
@@ -182,8 +181,8 @@ not inverted because it depends only on distance to each wall. The dashboard
 applies the same rule while the recorded-match timeline moves.
 
 ```bash
-coach-silvs --team yellow --ruleset robocore-vsss-2025
-coach-silvs-evolve run --ruleset robocore-vsss-2025 --matches-per-pair 5
+vsss-coach --team yellow --ruleset robocore-vsss-2025
+vsss-coach-evolve run --ruleset robocore-vsss-2025 --matches-per-pair 5
 ```
 
 The five round-robin repetitions and draw penalty are experimental fitness
@@ -197,7 +196,7 @@ O currículo abaixo agenda globalmente 10 partidas de 30 segundos, 10 de um
 minuto e 5 de cinco minutos:
 
 ```bash
-PYTHONPATH=src python3.11 -m coach_silvs.evolution run \
+PYTHONPATH=src python3.11 -m vsss_coach.evolution run \
   --competitors 2 \
   --generations 25 \
   --matches-per-pair 1 \
@@ -237,13 +236,13 @@ optimizer development. Defender trials can also use full Webots physics; each
 worker keeps one simulator alive for every repositioning of one candidate.
 
 ```bash
-PYTHONPATH=src python3.11 -m coach_silvs.role_trials \
+PYTHONPATH=src python3.11 -m vsss_coach.role_trials \
   --role defender --candidates 32 --scenarios 60 \
   --scenario-duration 5 --generations 20 --workers 4 \
   --optimizer hybrid-surrogate-es --surrogate-learning-rate 0.35 \
   --run-name defender-32x60
 
-PYTHONPATH=src python3.11 -m coach_silvs.role_dashboard \
+PYTHONPATH=src python3.11 -m vsss_coach.role_dashboard \
   --run role-runs/defender-32x60 --port 8100
 ```
 
@@ -252,7 +251,7 @@ Minimal physical smoke test (rebuild the supervisor first):
 ```bash
 make -C /path/to/travesim/controllers/referee_controller
 
-PYTHONPATH=src python3.11 -m coach_silvs.role_trials \
+PYTHONPATH=src python3.11 -m vsss_coach.role_trials \
   --role defender --backend travesim \
   --candidates 2 --scenarios 2 --scenario-duration 2 \
   --generations 1 --workers 2 --webots-mode fast \
@@ -260,7 +259,7 @@ PYTHONPATH=src python3.11 -m coach_silvs.role_trials \
   --webots /Applications/Webots.app/Contents/MacOS/webots \
   --run-name defender-physics-smoke
 
-PYTHONPATH=src python3.11 -m coach_silvs.role_dashboard \
+PYTHONPATH=src python3.11 -m vsss_coach.role_dashboard \
   --run role-runs/defender-physics-smoke --port 8100
 ```
 
@@ -285,11 +284,11 @@ rerun the rendering. Use `--source rerun` only when a fresh physics evaluation
 is explicitly wanted; its result may differ from the original training result.
 
 ```bash
-PYTHONPATH=src python3.11 -m coach_silvs.goalkeeper_compare \
+PYTHONPATH=src python3.11 -m vsss_coach.goalkeeper_compare \
   --run role-runs/goalkeeper-delayed-spin-32x30-16g-20260915 \
   --layout horizontal
 
-PYTHONPATH=src python3.11 -m coach_silvs.goalkeeper_compare \
+PYTHONPATH=src python3.11 -m vsss_coach.goalkeeper_compare \
   --run role-runs/defender-earliest-corridor-16x30-8g-20260914 \
   --layout vertical
 ```
@@ -506,7 +505,7 @@ as their `config.json` is present.
 If you prefer not to use the Make target, the equivalent command is:
 
 ```bash
-coach-silvs-evolve run \
+vsss-coach-evolve run \
   --competitors 4 \
   --matches-per-pair 1 \
   --workers 2 \
@@ -534,7 +533,7 @@ parallel scheduling, match artifacts, scoring, breeding, mutation, ranking, and
 dashboard-compatible output. It does not validate Webots physics or real goals.
 
 ```bash
-coach-silvs-evolve run \
+vsss-coach-evolve run \
   --competitors 32 \
   --matches-per-pair 5 \
   --workers 8 \
@@ -649,7 +648,7 @@ Formula limits:
 Resume an interrupted experiment without replaying its completed matches:
 
 ```bash
-PYTHONPATH=src python3.11 -m coach_silvs.evolution resume \
+PYTHONPATH=src python3.11 -m vsss_coach.evolution resume \
   --run runs/physical-shared-4x5-original-baseline-2 \
   --match-retries 2
 ```
@@ -669,7 +668,7 @@ Use `--simulation-mode baseline-variants` to keep every vector-field formula
 fixed and evolve only scalar genome parameters around the baseline:
 
 ```bash
-PYTHONPATH=src python3.11 -m coach_silvs.evolution run \
+PYTHONPATH=src python3.11 -m vsss_coach.evolution run \
   --simulation-mode baseline-variants --competitors 10 --generations 5 \
   --baseline-matches 1 --backend mock --run-name baseline-variants-1
 ```
@@ -680,7 +679,7 @@ latest generation snapshot) becomes the fixed baseline. Its formula is
 preserved and the source run is recorded in `baseline.json`:
 
 ```bash
-PYTHONPATH=src python3.11 -m coach_silvs.evolution run \
+PYTHONPATH=src python3.11 -m vsss_coach.evolution run \
   --simulation-mode baseline-variants --baseline-from runs/baseline-variants-1 \
   --competitors 10 --generations 5 --backend mock \
   --run-name baseline-variants-2
@@ -738,7 +737,7 @@ and pins local multicast to loopback so parallel matches do not depend on the
 active network interface. Minimal physical smoke test:
 
 ```bash
-coach-silvs-evolve run \
+vsss-coach-evolve run \
   --competitors 2 --matches-per-pair 1 --workers 1 --generations 1 \
   --early-stopping none --backend travesim \
   --travesim-root /path/to/travesim \
@@ -756,7 +755,7 @@ python3.11 -m pip install -e '.[dev,wandb]'
 export WANDB_API_KEY='...'
 ```
 
-Add `--wandb-mode online --wandb-project coach-silvs` to a run. Each generation
+Add `--wandb-mode online --wandb-project vsss-coach` to a run. Each generation
 logs score/goal metrics and a ranking Table. Configuration, rankings, candidates,
 live state, and generation snapshots are uploaded as an artifact; add
 `--wandb-log-matches` only when replay files should also be sent. Use
@@ -788,7 +787,7 @@ queue automatically.
 Start physical TraveSim evolution and its live dashboard together:
 
 ```bash
-coach-silvs-live \
+vsss-coach-live \
   --run-name physical-001 \
   --port 8080 \
   -- \
@@ -814,7 +813,7 @@ PID, dashboard URL, log path, and the `kill` command used to stop it.
 Start the dashboard in a second terminal while evolution is running:
 
 ```bash
-coach-silvs-dashboard \
+vsss-coach-dashboard \
   --run runs/experiment-001 \
   --host 127.0.0.1 \
   --port 8080

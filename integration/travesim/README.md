@@ -4,7 +4,7 @@ VSSS Coach and TraveSim are separate repositories. Commands that use physical
 simulation receive the simulator checkout explicitly:
 
 ```bash
-PYTHONPATH=src python3.11 -m coach_silvs.role_trials \
+PYTHONPATH=src python3.11 -m vsss_coach.role_trials \
   --role goalkeeper --backend travesim \
   --travesim-root /path/to/travesim \
   --webots /Applications/Webots.app/Contents/MacOS/webots \

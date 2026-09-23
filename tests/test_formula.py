@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from coach_silvs.formula import (
+from vsss_coach.formula import (
     evaluate_expression,
     expression_stats,
     expression_text,

@@ -35,7 +35,7 @@ def evolution_command(args: argparse.Namespace, extra: list[str]) -> list[str]:
     return [
         sys.executable,
         "-m",
-        "coach_silvs.evolution",
+        "vsss_coach.evolution",
         "run",
         *extra,
         "--backend",
@@ -79,7 +79,7 @@ def main() -> None:
         forwarded.insert(separator, "--background-child")
         with log_path.open("ab") as log:
             child = subprocess.Popen(
-                [sys.executable, "-m", "coach_silvs.live", *forwarded],
+                [sys.executable, "-m", "vsss_coach.live", *forwarded],
                 stdin=subprocess.DEVNULL,
                 stdout=log,
                 stderr=subprocess.STDOUT,

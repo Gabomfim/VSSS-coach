@@ -4,8 +4,8 @@ import argparse
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
-from coach_silvs.fields import univector_ball_field
-from coach_silvs.model import BallState, RobotState, Vec2
+from vsss_coach.fields import univector_ball_field
+from vsss_coach.model import BallState, RobotState, Vec2
 
 def main() -> None:
     parser = argparse.ArgumentParser()

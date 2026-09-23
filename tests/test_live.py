@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from coach_silvs.live import build_parser, evolution_command, mark_run_failed
+from vsss_coach.live import build_parser, evolution_command, mark_run_failed
 
 
 class LiveLauncherTests(unittest.TestCase):

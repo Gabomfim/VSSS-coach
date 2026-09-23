@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from coach_silvs.distributed import JobQueue
+from vsss_coach.distributed import JobQueue
 
 
 class DistributedQueueTests(unittest.TestCase):

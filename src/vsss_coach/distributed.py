@@ -222,9 +222,9 @@ def worker_loop(args: argparse.Namespace, slot: int) -> None:
 
 
 def coordinator_main(args: argparse.Namespace) -> None:
-    admin_token = args.admin_token or os.environ.get("COACH_SILVS_ADMIN_TOKEN", "")
-    worker_token = args.worker_token or os.environ.get("COACH_SILVS_WORKER_TOKEN", "")
-    if min(len(admin_token), len(worker_token)) < 24: raise SystemExit("Set COACH_SILVS_ADMIN_TOKEN and COACH_SILVS_WORKER_TOKEN with at least 24 characters")
+    admin_token = args.admin_token or os.environ.get("VSSS_COACH_ADMIN_TOKEN", "")
+    worker_token = args.worker_token or os.environ.get("VSSS_COACH_WORKER_TOKEN", "")
+    if min(len(admin_token), len(worker_token)) < 24: raise SystemExit("Set VSSS_COACH_ADMIN_TOKEN and VSSS_COACH_WORKER_TOKEN with at least 24 characters")
     args.data_dir.mkdir(parents=True, exist_ok=True)
     server = ThreadingHTTPServer((args.host, args.port), handler_for(JobQueue(args.data_dir / "queue.sqlite3"), admin_token, worker_token))
     print(f"Coordinator: http://{args.host}:{args.port}")
@@ -233,8 +233,8 @@ def coordinator_main(args: argparse.Namespace) -> None:
 
 
 def worker_main(args: argparse.Namespace) -> None:
-    args.token = args.token or os.environ.get("COACH_SILVS_WORKER_TOKEN", "")
-    if len(args.token) < 24: raise SystemExit("Use --token or COACH_SILVS_WORKER_TOKEN with at least 24 characters")
+    args.token = args.token or os.environ.get("VSSS_COACH_WORKER_TOKEN", "")
+    if len(args.token) < 24: raise SystemExit("Use --token or VSSS_COACH_WORKER_TOKEN with at least 24 characters")
     args.worker_name = args.worker_name or socket.gethostname()
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
         list(executor.map(lambda slot: worker_loop(args, slot), range(args.workers)))

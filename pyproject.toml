@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "coach-silvs"
+name = "vsss-coach"
 version = "0.2.0"
 description = "Genetic-programming-ready vector-field strategy for TraveSim"
 readme = "README.md"
@@ -18,14 +18,14 @@ dev = []
 wandb = ["wandb>=0.19,<1"]
 
 [project.scripts]
-coach-silvs = "coach_silvs.client:main"
-coach-silvs-evolve = "coach_silvs.evolution:main"
-coach-silvs-dashboard = "coach_silvs.dashboard:main"
-coach-silvs-live = "coach_silvs.live:main"
-coach-silvs-distributed = "coach_silvs.distributed:main"
-coach-silvs-role-trials = "coach_silvs.role_trials:main"
-coach-silvs-role-dashboard = "coach_silvs.role_dashboard:main"
-coach-silvs-role-compare = "coach_silvs.goalkeeper_compare:main"
+vsss-coach = "vsss_coach.client:main"
+vsss-coach-evolve = "vsss_coach.evolution:main"
+vsss-coach-dashboard = "vsss_coach.dashboard:main"
+vsss-coach-live = "vsss_coach.live:main"
+vsss-coach-distributed = "vsss_coach.distributed:main"
+vsss-coach-role-trials = "vsss_coach.role_trials:main"
+vsss-coach-role-dashboard = "vsss_coach.role_dashboard:main"
+vsss-coach-role-compare = "vsss_coach.goalkeeper_compare:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

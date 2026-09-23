@@ -6,9 +6,9 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from coach_silvs.controller import StrategyConfig, VectorFieldStrategy
-from coach_silvs.fields import closest_approach, segment_field, univector_ball_field
-from coach_silvs.model import BallState, RobotState, Segment, Vec2, WorldState
+from vsss_coach.controller import StrategyConfig, VectorFieldStrategy
+from vsss_coach.fields import closest_approach, segment_field, univector_ball_field
+from vsss_coach.model import BallState, RobotState, Segment, Vec2, WorldState
 
 
 class GeometryTests(unittest.TestCase):

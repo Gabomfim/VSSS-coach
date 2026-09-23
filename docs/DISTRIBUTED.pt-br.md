@@ -13,8 +13,8 @@ cria jobs e lê resultados; o de worker apenas registra capacidade, reserva e
 entrega partidas:
 
 ```bash
-export COACH_SILVS_ADMIN_TOKEN="$(openssl rand -hex 32)"
-export COACH_SILVS_WORKER_TOKEN="$(openssl rand -hex 32)"
+export VSSS_COACH_ADMIN_TOKEN="$(openssl rand -hex 32)"
+export VSSS_COACH_WORKER_TOKEN="$(openssl rand -hex 32)"
 ```
 
 Não coloque esses valores no Git, README, histórico compartilhado ou arquivos
@@ -26,9 +26,9 @@ No computador principal:
 
 ```bash
 source .venv/bin/activate
-export COACH_SILVS_ADMIN_TOKEN='SEGREDO_ADMINISTRATIVO_DE_64_CARACTERES'
-export COACH_SILVS_WORKER_TOKEN='SEGREDO_DOS_WORKERS_DE_64_CARACTERES'
-coach-silvs-distributed coordinator \
+export VSSS_COACH_ADMIN_TOKEN='SEGREDO_ADMINISTRATIVO_DE_64_CARACTERES'
+export VSSS_COACH_WORKER_TOKEN='SEGREDO_DOS_WORKERS_DE_64_CARACTERES'
+vsss-coach-distributed coordinator \
   --host 127.0.0.1 \
   --port 8090 \
   --data-dir runs/distributed
@@ -48,8 +48,8 @@ público.
 Inicie a evolução apontando para a fila:
 
 ```bash
-export COACH_SILVS_ADMIN_TOKEN='SEGREDO_ADMINISTRATIVO_DE_64_CARACTERES'
-coach-silvs-evolve run \
+export VSSS_COACH_ADMIN_TOKEN='SEGREDO_ADMINISTRATIVO_DE_64_CARACTERES'
+vsss-coach-evolve run \
   --backend travesim \
   --execution distributed \
   --coordinator-url 'https://NOME-DA-MAQUINA.TAILNET.ts.net' \
@@ -73,8 +73,8 @@ python3.11 -m venv .venv
 source .venv/bin/activate
 PIP_USER=0 python3.11 -m pip install -e './strategy[dev]'
 make
-export COACH_SILVS_WORKER_TOKEN='SEGREDO_RECEBIDO_POR_CANAL_SEGURO'
-coach-silvs-distributed worker \
+export VSSS_COACH_WORKER_TOKEN='SEGREDO_RECEBIDO_POR_CANAL_SEGURO'
+vsss-coach-distributed worker \
   --coordinator 'https://NOME-DA-MAQUINA.TAILNET.ts.net' \
   --workers 2 \
   --worker-name 'computador-da-ana' \
@@ -106,7 +106,7 @@ seu tailnet; valide no editor de políticas antes de salvar):
 {
   "grants": [
     {
-      "src": ["group:coach-silvs-workers"],
+      "src": ["group:vsss-coach-workers"],
       "dst": ["NOME-DO-COORDENADOR:443"],
       "ip": ["tcp:443"]
     }
@@ -131,7 +131,7 @@ slots ativos, fila, partidas em execução e concluídas.
 ## Diagnóstico
 
 ```bash
-curl -H "Authorization: Bearer $COACH_SILVS_WORKER_TOKEN" \
+curl -H "Authorization: Bearer $VSSS_COACH_WORKER_TOKEN" \
   'https://NOME-DA-MAQUINA.TAILNET.ts.net/api/v1/status'
 tailscale ping NOME-DA-MAQUINA
 tailscale serve status

@@ -8,7 +8,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from coach_silvs.evolution import MatchTask, apply_match_duration_curriculum, apply_result, baseline_candidate, baseline_variant, behavior_metrics, breed, build_parser, candidate_from_payload, candidate_payload, estimate_remaining_seconds, load_baseline_from_run, mock_match, next_generation, parse_match_duration_curriculum, player_contributions, random_candidate, run_evolution, run_match_with_retries, specialize_ball_players, tasks_for_generation
+from vsss_coach.evolution import MatchTask, apply_match_duration_curriculum, apply_result, baseline_candidate, baseline_variant, behavior_metrics, breed, build_parser, candidate_from_payload, candidate_payload, estimate_remaining_seconds, load_baseline_from_run, mock_match, next_generation, parse_match_duration_curriculum, player_contributions, random_candidate, run_evolution, run_match_with_retries, specialize_ball_players, tasks_for_generation
 
 
 class EvolutionTests(unittest.TestCase):

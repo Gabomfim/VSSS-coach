@@ -4,9 +4,9 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from coach_silvs.client import attack_sign_for_time, default_attack_sign, build_parser as build_client_parser
-from coach_silvs.evolution import build_parser as build_evolution_parser
-from coach_silvs.rules import ROBOCORE_VSSS_2025, get_ruleset
+from vsss_coach.client import attack_sign_for_time, default_attack_sign, build_parser as build_client_parser
+from vsss_coach.evolution import build_parser as build_evolution_parser
+from vsss_coach.rules import ROBOCORE_VSSS_2025, get_ruleset
 
 
 class CompetitionRulesTests(unittest.TestCase):

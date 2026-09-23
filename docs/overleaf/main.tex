@@ -1154,13 +1154,13 @@ Ap\'os instalar Webots, VSSProto e o pacote Python da estrat\'egia, uma partida 
 
 \begin{verbatim}
 webots worlds/Match3v3.wbt
-coach-silvs --team yellow
+vsss-coach --team yellow
 \end{verbatim}
 
 Uma segunda inst\^ancia pode controlar a equipe azul:
 
 \begin{verbatim}
-coach-silvs --team blue
+vsss-coach --team blue
 \end{verbatim}
 
 Para treinamento, cada trabalhador deve usar portas exclusivas ou um ambiente de rede isolado. O orquestrador da programa\c{c}\~ao gen\'etica ser\'a respons\'avel por iniciar partidas, definir sementes, reposicionar entidades, encerrar a simula\c{c}\~ao, coletar placar e registrar colis\~oes.
@@ -1169,14 +1169,14 @@ Para treinamento, cada trabalhador deve usar portas exclusivas ou um ambiente de
 \section{Execu\c{c}\~ao paralela das gera\c{c}\~oes}
 % ================================================================
 
-O pacote da estrat\'egia fornece o comando \texttt{coach-silvs-evolve}. Ele centraliza no terminal as decis\~oes que definem um experimento evolutivo: popula\c{c}\~ao, paralelismo, cruzamento, sele\c{c}\~ao, sobreviv\^encia, muta\c{c}\~ao, parada antecipada e limites das f\'ormulas.
+O pacote da estrat\'egia fornece o comando \texttt{vsss-coach-evolve}. Ele centraliza no terminal as decis\~oes que definem um experimento evolutivo: popula\c{c}\~ao, paralelismo, cruzamento, sele\c{c}\~ao, sobreviv\^encia, muta\c{c}\~ao, parada antecipada e limites das f\'ormulas.
 
 O argumento \texttt{--field-strategy} seleciona a pol\'itica de compartilhamento dos campos. Em \texttt{individual}, cada rob\^o aliado evolui conjuntos pr\'oprios de blocos para aliados, advers\'arios, paredes e gols; o campo univetorial da bola permanece compartilhado. Em \texttt{shared}, todos os aliados reutilizam o mesmo conjunto, mas os blocos associados a aliados e advers\'arios continuam distintos e podem evoluir equa\c{c}\~oes diferentes. Nas duas arquiteturas, o rob\^o controlado \'e removido da lista de aliados antes da soma, portanto nunca sofre influ\^encia do campo gerado por seu pr\'oprio estado. O argumento \texttt{--robots-per-team} define se a topologia individual cria tr\^es ou cinco conjuntos.
 
 Uma execu\c{c}\~ao completa pode ser iniciada por:
 
 \begin{verbatim}
-coach-silvs-evolve run \
+vsss-coach-evolve run \
   --competitors 32 \
   --matches-per-pair 5 \
   --workers 8 \
@@ -1291,9 +1291,9 @@ O backend \texttt{travesim} executa avalia\c{c}\~ao esportiva real e grava telem
 
 O acompanhamento experimental pode ser conectado ao Weights \& Biases. A cada gera\c{c}\~ao s\~ao registrados melhor escore, vit\'orias, empates, derrotas, gols, saldo, m\'edia populacional e uma tabela de ranking. Tamb\'em s\~ao publicadas tabelas de genomas e de blocos de campos vetoriais (jogador, objeto, profundidade, n\'umero de n\'os, constantes, f\'ormula textual e \'arvore JSON), permitindo comparar e reproduzir a evolu\c{c}\~ao estrutural das f\'ormulas. Cada bloco \'e uma AST execut\'avel com operadores protegidos de soma, multiplica\c{c}\~ao, nega\c{c}\~ao, tangente hiperb\'olica e limita\c{c}\~ao; seus terminais incluem constantes, dist\^ancia normalizada, tempo restante, saldo de gols e sentido de ataque. O controlador e o dashboard avaliam a mesma \'arvore. As cole\c{c}\~oes tamb\'em s\~ao gravadas em \texttt{formulas.json} e \texttt{generations/formulas-NNNN.json}. Configura\c{c}\~ao, candidatos, gera\c{c}\~oes, f\'ormulas e ranking s\~ao publicados como artefato; replays completos somente quando solicitados. A autentica\c{c}\~ao usa exclusivamente a vari\'avel \texttt{WANDB\_API\_KEY}, e o modo \texttt{offline} permite validar a integra\c{c}\~ao sem envio externo.
 
-O comando \texttt{coach-silvs-live} inicia conjuntamente a evolu\c{c}\~ao f\'isica e o servidor do dashboard, for\c{c}ando \texttt{backend=travesim}. A interface fica dispon\'ivel enquanto o Webots executa, identifica a fonte como \texttt{TRAVESIM REAL} e incorpora automaticamente cada replay quando a telemetria final chega. Ao encerrar o launcher, partidas ainda ativas tamb\'em s\~ao finalizadas de forma controlada.
+O comando \texttt{vsss-coach-live} inicia conjuntamente a evolu\c{c}\~ao f\'isica e o servidor do dashboard, for\c{c}ando \texttt{backend=travesim}. A interface fica dispon\'ivel enquanto o Webots executa, identifica a fonte como \texttt{TRAVESIM REAL} e incorpora automaticamente cada replay quando a telemetria final chega. Ao encerrar o launcher, partidas ainda ativas tamb\'em s\~ao finalizadas de forma controlada.
 
-O servidor tamb\'em pode ser iniciado separadamente com \texttt{coach-silvs-dashboard --run runs/<nome>}. Nesse modo ele somente l\^e os arquivos incrementais da execu\c{c}\~ao, podendo ser reiniciado ou atualizado durante uma simula\c{c}\~ao longa sem afet\'a-la. Para acesso remoto, a porta deve ficar restrita \`a interface privada da VPN.
+O servidor tamb\'em pode ser iniciado separadamente com \texttt{vsss-coach-dashboard --run runs/<nome>}. Nesse modo ele somente l\^e os arquivos incrementais da execu\c{c}\~ao, podendo ser reiniciado ou atualizado durante uma simula\c{c}\~ao longa sem afet\'a-la. Para acesso remoto, a porta deve ficar restrita \`a interface privada da VPN.
 
 % ================================================================
 \section{Execu\c{c}\~ao distribu\'ida em VPN}
@@ -1312,7 +1312,7 @@ O dashboard apresenta os slots conectados, partidas na fila, em execu\c{c}\~ao e
 O monitor \'e iniciado em outro terminal:
 
 \begin{verbatim}
-coach-silvs-dashboard \
+vsss-coach-dashboard \
   --run runs/experiment-001 \
   --host 127.0.0.1 \
   --port 8080

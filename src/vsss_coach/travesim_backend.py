@@ -162,7 +162,7 @@ def run_travesim_match(task: Any, config: TraveSimConfig) -> dict[str, Any]:
     if ports[-1] > 65535:
         raise RuntimeError("real match port range exceeds 65535; lower --travesim-port-base")
 
-    with tempfile.TemporaryDirectory(prefix=f"coach-silvs-{task.match_id}-") as temporary:
+    with tempfile.TemporaryDirectory(prefix=f"vsss-coach-{task.match_id}-") as temporary:
         work = Path(temporary)
         live_matches = Path(config.live_matches_dir)
         live_matches.mkdir(parents=True, exist_ok=True)
@@ -191,13 +191,13 @@ def run_travesim_match(task: Any, config: TraveSimConfig) -> dict[str, Any]:
             *ports,
             client_sync_delay_ms=config.client_sync_delay_ms,
         )
-        world_path = root / "worlds" / f".coach-silvs-{os.getpid()}-{task.task_index}.wbt"
+        world_path = root / "worlds" / f".vsss-coach-{os.getpid()}-{task.task_index}.wbt"
         world_path.write_text(world, encoding="utf-8")
 
         common = [
             sys.executable,
             "-m",
-            "coach_silvs.client",
+            "vsss_coach.client",
             "--vision-port",
             str(ports[3]),
             "--vision-interface",

@@ -7,8 +7,8 @@ import re
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from coach_silvs.formations import place_both_teams
-from coach_silvs.travesim_backend import _team_scores, _telemetry_frames, render_match_world
+from vsss_coach.formations import place_both_teams
+from vsss_coach.travesim_backend import _team_scores, _telemetry_frames, render_match_world
 
 
 class TraveSimBackendTests(unittest.TestCase):

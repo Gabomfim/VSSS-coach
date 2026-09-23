@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from coach_silvs.formations import FORMATION_NAMES, place_both_teams, place_team
+from vsss_coach.formations import FORMATION_NAMES, place_both_teams, place_team
 
 
 class FormationTests(unittest.TestCase):

@@ -943,9 +943,9 @@ def ranking_payload(ranking: list[Candidate]) -> list[dict[str, Any]]:
 
 def run_distributed_matches(tasks: list[MatchTask], config: TraveSimConfig, args: argparse.Namespace, run_dir: Path) -> Iterable[dict[str, Any]]:
     from .distributed import request_json
-    token = args.coordinator_token or os.environ.get("COACH_SILVS_ADMIN_TOKEN", "")
+    token = args.coordinator_token or os.environ.get("VSSS_COACH_ADMIN_TOKEN", "")
     if len(token) < 24:
-        raise SystemExit("distributed execution requires --coordinator-token or COACH_SILVS_ADMIN_TOKEN")
+        raise SystemExit("distributed execution requires --coordinator-token or VSSS_COACH_ADMIN_TOKEN")
     jobs = [{"id": task.match_id, "generation": task.generation, "payload": {"task": asdict(task), "config": asdict(config)}} for task in tasks]
     request_json(args.coordinator_url + "/api/v1/jobs", token, "POST", {"jobs": jobs}, timeout=120)
     delivered: set[str] = set()
@@ -1291,7 +1291,7 @@ def add_run_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--run-name")
     parser.add_argument("--dashboard-update-every", type=int, default=1)
     parser.add_argument("--wandb-mode", choices=("disabled", "offline", "online"), default="disabled")
-    parser.add_argument("--wandb-project", default="coach-silvs")
+    parser.add_argument("--wandb-project", default="vsss-coach")
     parser.add_argument("--wandb-entity")
     parser.add_argument("--wandb-group")
     parser.add_argument("--wandb-log-matches", action="store_true", help="upload all match replay JSON files as an artifact")

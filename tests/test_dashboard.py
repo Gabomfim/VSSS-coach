@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from coach_silvs.dashboard import DashboardHandler, HTML, REPLAY_FPS
+from vsss_coach.dashboard import DashboardHandler, HTML, REPLAY_FPS
 
 
 class DashboardTests(unittest.TestCase):

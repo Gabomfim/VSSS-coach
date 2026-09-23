@@ -8,7 +8,7 @@ an external dependency and must not be vendored into this repository.
 ## Architecture
 
 - Keep vector-field mathematics independent from sockets, protobuf, and Webots.
-- Keep VSSProto translation in `src/coach_silvs/client.py`.
+- Keep VSSProto translation in `src/vsss_coach/client.py`.
 - Keep differential-drive conversion and safety limits in `controller.py`.
 - Access TraveSim only through explicit paths and protocol/integration modules.
 - Evolved expressions produce nominal vectors; deterministic safety limits stay
