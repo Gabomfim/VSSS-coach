@@ -1,13 +1,17 @@
-# Coach Silvs
+# VSSS Coach
 
 Vector-field strategies, role-specific training, evolutionary optimization,
 experiment dashboards, and VSSS tooling. TraveSim is an external simulator:
 this repository connects to a separate TraveSim checkout through VSSProto and
 the `--travesim-root` option.
 
+The repository is named `VSSS-coach`. The Python package `coach_silvs` and the
+existing `coach-silvs-*` commands are retained for backward compatibility with
+recorded experiments and automation scripts.
+
 The separation is intentional:
 
-- **Coach Silvs** owns player strategy, candidate representations, optimizers,
+- **VSSS Coach** owns player strategy, candidate representations, optimizers,
   trials, telemetry processing, dashboards, distributed workers, and reports;
 - **TraveSim** owns the Webots world, robot physics, network protocol, and
   referee/supervisor implementation.
@@ -691,7 +695,7 @@ dashboard read results without sharing Python memory with the tournament.
 
 Every generation champion is evaluated against a fixed candidate named
 `baseline`. It uses the original deterministic fields for allies, opponents,
-walls and goals. Its ball field is also the original deterministic Coach Silvs
+walls and goals. Its ball field is also the original deterministic VSSS Coach
 field: it predicts the ball position, approaches from behind relative to the
 opponent goal, combines approach and shot attraction, and adds a tangential
 component to correct the arrival angle.

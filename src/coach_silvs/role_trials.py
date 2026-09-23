@@ -492,7 +492,7 @@ def run(args: argparse.Namespace) -> Path:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Coach Silvs role-specific multi-scenario trials")
+    parser = argparse.ArgumentParser(description="VSSS Coach role-specific multi-scenario trials")
     parser.add_argument("--role", choices=("goalkeeper", "defender", "attacker"), required=True)
     parser.add_argument("--candidates", type=int, default=32)
     parser.add_argument("--scenarios", type=int, default=60)

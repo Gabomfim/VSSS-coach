@@ -1,6 +1,6 @@
 # TraveSim integration
 
-Coach Silvs and TraveSim are separate repositories. Commands that use physical
+VSSS Coach and TraveSim are separate repositories. Commands that use physical
 simulation receive the simulator checkout explicitly:
 
 ```bash
@@ -12,7 +12,7 @@ PYTHONPATH=src python3.11 -m coach_silvs.role_trials \
   --run-name goalkeeper-physical-smoke
 ```
 
-The compatible TraveSim fork must provide the Coach Silvs supervisor additions:
+The compatible TraveSim fork must provide the VSSS Coach supervisor additions:
 configurable UDP ports, physical match state and telemetry, role-scenario reset
 and initial ball velocity, goal attribution, halftime repositioning, and match
 recording. These changes belong in TraveSim because they control simulator
@@ -20,7 +20,7 @@ physics and the referee.
 
 ## Install the 3D replay controller
 
-The replay controller belongs to Coach Silvs because it interprets Coach Silvs
+The replay controller belongs to VSSS Coach because it interprets VSSS Coach
 run artifacts. Link or copy it into a local TraveSim checkout:
 
 ```bash
@@ -35,5 +35,5 @@ checkout and reference this controller by name.
 ## Boundary
 
 Do not copy TraveSim worlds, PROTO files, compiled controllers, or upstream
-source into Coach Silvs. Conversely, strategy source, optimizers, dashboards,
+source into VSSS Coach. Conversely, strategy source, optimizers, dashboards,
 tests, and run artifacts do not belong in the TraveSim repository.

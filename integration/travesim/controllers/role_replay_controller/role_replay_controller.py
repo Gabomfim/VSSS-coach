@@ -1,4 +1,4 @@
-"""Replay recorded Coach Silvs role-trial telemetry inside Webots."""
+"""Replay recorded VSSS Coach role-trial telemetry inside Webots."""
 
 import json
 import os

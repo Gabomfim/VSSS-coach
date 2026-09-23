@@ -1,4 +1,4 @@
-"""Authenticated persistent match queue for distributed Coach Silvs workers."""
+"""Authenticated persistent match queue for distributed VSSS Coach workers."""
 
 from __future__ import annotations
 
@@ -241,7 +241,7 @@ def worker_main(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Coach Silvs distributed physical match queue")
+    parser = argparse.ArgumentParser(description="VSSS Coach distributed physical match queue")
     sub = parser.add_subparsers(dest="command", required=True)
     coordinator = sub.add_parser("coordinator")
     coordinator.add_argument("--host", default="127.0.0.1"); coordinator.add_argument("--port", type=int, default=8090)

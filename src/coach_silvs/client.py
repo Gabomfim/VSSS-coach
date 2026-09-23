@@ -196,7 +196,7 @@ def run(args: argparse.Namespace) -> None:
     command_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     command_socket.connect((args.command_address, command_port))
     print(
-        f"Coach Silvs: {args.team}, rules {rules.name} v{rules.version}, "
+        f"VSSS Coach: {args.team}, rules {rules.name} v{rules.version}, "
         f"vision {args.vision_address}:{args.vision_port}, commands {args.command_address}:{command_port}"
     )
     received_first_frame = False
@@ -215,7 +215,7 @@ def run(args: argparse.Namespace) -> None:
                 estimator = StateEstimator()
             previous_ball_position = current_ball_position
             if not received_first_frame:
-                print(f"Coach Silvs: first vision frame step={environment.step}", file=sys.stderr, flush=True)
+                print(f"VSSS Coach: first vision frame step={environment.step}", file=sys.stderr, flush=True)
                 received_first_frame = True
             # Environment.step is the simulator step count. Using simulation
             # time also makes acceleration estimation independent of Webots mode.
@@ -328,14 +328,14 @@ def run(args: argparse.Namespace) -> None:
             packet.cmd.CopyFrom(commands)
             command_socket.send(packet.SerializeToString())
     except KeyboardInterrupt:
-        print("\nCoach Silvs stopped")
+        print("\nVSSS Coach stopped")
     finally:
         command_socket.close()
         vision_socket.close()
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Coach Silvs vector-field client for TraveSim")
+    parser = argparse.ArgumentParser(description="VSSS Coach vector-field client for TraveSim")
     parser.add_argument("--team", choices=("yellow", "blue"), default="yellow")
     parser.add_argument("--vision-address", default="224.0.0.1")
     parser.add_argument("--vision-port", type=int, default=10002)

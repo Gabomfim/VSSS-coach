@@ -19,9 +19,9 @@ REPLAY_FPS = 30
 
 
 
-HTML = r"""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Coach Silvs Monitor</title><style>
+HTML = r"""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VSSS Coach Monitor</title><style>
 :root{font-family:Inter,system-ui,sans-serif;color:#e7f0e8;background:#0c1510}body{margin:0;padding:20px}h1{margin:0 0 16px}.grid{display:grid;grid-template-columns:repeat(2,minmax(320px,1fr));gap:16px}.card{background:#15241b;border:1px solid #2d4a36;border-radius:12px;padding:14px;overflow:auto}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:7px;border-bottom:1px solid #294332}canvas{display:block;width:100%;height:auto;aspect-ratio:15/13;background:#193b23;border-radius:8px}canvas.chart{aspect-ratio:2/1;background:#101d15}.pitch-wrap{position:relative;line-height:0}.pitch-wrap svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.goal-frame{fill:none;stroke-width:5;stroke-linejoin:round}.goal-post{stroke:#223a29;stroke-width:1.5}.goal-label{font-size:16px;font-weight:800;paint-order:stroke;stroke:#0c1510;stroke-width:3px}.goal-events,.team-legend{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:8px 0}.goal-events button{border-color:#d89b45}.team-badge{padding:7px 10px;border-radius:7px;background:#0f1d14;font-weight:800;border:2px solid}.team-yellow{color:#ffdf3e;border-color:#ffdf3e}.team-blue{color:#72b8ff;border-color:#53a6ff}.metrics,.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.replay-status{min-height:42px;align-content:center;overflow:hidden}.metric b{display:block;font-size:1.5rem}.scoreboard{margin:10px 0;padding:8px 12px;border-radius:8px;background:#0f1d14;font-size:1.05rem;font-weight:700}.score-row{display:grid;grid-template-columns:minmax(90px,1fr) 110px;align-items:center;padding:5px 0;border-bottom:1px solid #294332}.score-row:last-child{border-bottom:0;font-size:1.18rem}.score-period{text-align:left}.score-value{text-align:center;white-space:nowrap}.score-yellow{color:#ffdf3e}.score-blue{color:#72b8ff}label{display:flex;gap:6px;align-items:center}select,button,input{background:#0f1d14;color:#fff;padding:7px;border:1px solid #477455;border-radius:6px}button{cursor:pointer}.wide{grid-column:1/-1}.hidden{display:none}pre{white-space:pre-wrap}@media(max-width:850px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}}</style></head><body>
-<h1>Coach Silvs — Evolution Monitor</h1><div id="metrics" class="card metrics"></div><div class="grid">
+<h1>VSSS Coach — Evolution Monitor</h1><div id="metrics" class="card metrics"></div><div class="grid">
 <section class="card"><h2>Ranking</h2><table><thead><tr><th>#</th><th>Candidato</th><th>Score</th><th>V/E/D</th><th>Saldo</th><th>Penalidade comportamental</th></tr></thead><tbody id="ranking"></tbody></table><p>● placar provisório de partida em andamento; penalidades comportamentais entram após a conclusão.</p></section>
 <section class="card"><h2>Workers VPN</h2><div id="distributedWorkers">Execução local</div></section>
 <section class="card wide"><h2>Tempo de bola parada por geração</h2><canvas id="ballStallChart" class="chart" width="1000" height="500"></canvas><p id="ballStallSummary">Aguardando partidas gravadas.</p></section>
@@ -636,7 +636,7 @@ class DashboardServer(ThreadingHTTPServer):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Coach Silvs tournament dashboard")
+    parser = argparse.ArgumentParser(description="VSSS Coach tournament dashboard")
     parser.add_argument("--run", required=True, type=Path)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)

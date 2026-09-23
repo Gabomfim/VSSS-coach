@@ -49,7 +49,7 @@ def evolution_command(args: argparse.Namespace, extra: list[str]) -> list[str]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Start real TraveSim evolution and a live Coach Silvs dashboard",
+        description="Start real TraveSim evolution and a live VSSS Coach dashboard",
     )
     parser.add_argument("--output", type=Path, default=Path("runs"))
     parser.add_argument("--run-name", help="defaults to a unique travesim-live timestamp")

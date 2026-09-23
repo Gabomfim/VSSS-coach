@@ -1,6 +1,6 @@
 # Relatório Overleaf
 
-Esta pasta contém o relatório técnico completo do projeto Coach Silvs.
+Esta pasta contém o relatório técnico completo do projeto VSSS Coach.
 
 Para importar no Overleaf:
 

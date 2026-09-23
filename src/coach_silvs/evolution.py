@@ -402,7 +402,7 @@ def baseline_candidate(field_strategy: str = "shared", robots_per_team: int = 3)
         "self_field": "excluded",
         "fixed_baseline": True,
         "baseline_model": "original_deterministic",
-        "source": "Coach Silvs original deterministic vector-field strategy",
+        "source": "VSSS Coach original deterministic vector-field strategy",
         "goal_post_escape_override": goal_post_escape_description(),
         "attacking_corner_escape_override": attacking_corner_escape_description(),
         "corner_shot_gate": corner_shot_gate_description(),
@@ -1298,7 +1298,7 @@ def add_run_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Parallel evolutionary tournament for Coach Silvs")
+    parser = argparse.ArgumentParser(description="Parallel evolutionary tournament for VSSS Coach")
     subparsers = parser.add_subparsers(dest="command", required=True)
     run_parser = subparsers.add_parser("run", help="run an evolutionary experiment")
     add_run_arguments(run_parser)

@@ -14,6 +14,9 @@ tmp/
 *.bbl
 *.blg
 *.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
 docs/overleaf/*.pdf
 *.toc
 *.zip

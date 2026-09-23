@@ -1,4 +1,4 @@
-# Execução distribuída do Coach Silvs
+# Execução distribuída do VSSS Coach
 
 ## Visão geral
 

@@ -25,7 +25,7 @@
   linkcolor=blue!55!black,
   citecolor=green!40!black,
   urlcolor=blue!65!black,
-  pdftitle={Coach Silvs -- Vector Fields Strategy Guide}
+  pdftitle={VSSS Coach -- Vector Fields Strategy Guide}
 }
 \setlist[itemize]{noitemsep,topsep=4pt}
 \setlist[enumerate]{noitemsep,topsep=4pt}
@@ -42,7 +42,7 @@
 % ================================================================
 % Documento
 % ================================================================
-\title{\textbf{Coach Silvs}\\[0.3cm]\large Vector Fields Strategy Guide}
+\title{\textbf{VSSS Coach}\\[0.3cm]\large Vector Fields Strategy Guide}
 \author{Equipe de Futebol de Rob\^os VSSS}
 \date{\today}
 
@@ -1285,7 +1285,7 @@ Uma inst\^ancia headless pode ser iniciada por:
 webots --batch --stdout --stderr --minimize worlds/Match3v3.wbt
 \end{verbatim}
 
-Na integra\c{c}\~ao Coach Silvs, o supervisor detecta a passagem completa da bola pela linha do gol, atualiza \texttt{goals\_blue} e \texttt{goals\_yellow}, restaura bola e rob\^os e encerra a simula\c{c}\~ao no tempo configurado. Cada partida escolhe uma forma\c{c}\~ao t\'atica de um cat\'alogo (balanceada, defensiva, ofensiva, aberta, compacta ou diagonal), espelha-a para o lado defendido e acrescenta pequenos desvios gaussianos limitados de posi\c{c}\~ao e orienta\c{c}\~ao. A forma\c{c}\~ao e a semente s\~ao gravadas junto ao replay.
+Na integra\c{c}\~ao VSSS Coach, o supervisor detecta a passagem completa da bola pela linha do gol, atualiza \texttt{goals\_blue} e \texttt{goals\_yellow}, restaura bola e rob\^os e encerra a simula\c{c}\~ao no tempo configurado. Cada partida escolhe uma forma\c{c}\~ao t\'atica de um cat\'alogo (balanceada, defensiva, ofensiva, aberta, compacta ou diagonal), espelha-a para o lado defendido e acrescenta pequenos desvios gaussianos limitados de posi\c{c}\~ao e orienta\c{c}\~ao. A forma\c{c}\~ao e a semente s\~ao gravadas junto ao replay.
 
 O backend \texttt{travesim} executa avalia\c{c}\~ao esportiva real e grava telemetria f\'isica em JSON Lines. Portas, mundo tempor\'ario e processos s\~ao isolados por partida; o multicast local usa a interface de loopback. O modo r\'apido inclui uma pequena janela de sincroniza\c{c}\~ao por passo para que clientes UDP externos recebam vis\~ao e devolvam comandos antes do pr\'oximo passo. O backend \texttt{mock} permanece restrito a testes r\'apidos de orquestra\c{c}\~ao e interface.
 

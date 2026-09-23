@@ -2,7 +2,7 @@
 
 ## Scope
 
-These instructions apply to the standalone Coach Silvs repository. TraveSim is
+These instructions apply to the standalone VSSS Coach repository. TraveSim is
 an external dependency and must not be vendored into this repository.
 
 ## Architecture

@@ -1,4 +1,4 @@
-"""Coach Silvs vector-field strategy for TraveSim."""
+"""VSSS Coach vector-field strategy for TraveSim."""
 
 from .controller import StrategyConfig, VectorFieldStrategy
 from .model import BallState, RobotState, Segment, Vec2, WorldState
