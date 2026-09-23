@@ -81,6 +81,15 @@ o mesmo conjunto de chutes: posições variadas da bola e do goleiro, diferentes
 direções e cinco velocidades iniciais. Assim, uma configuração não ganha apenas
 por ter recebido chutes mais fáceis.
 
+\subsection*{Antes de continuar: o ambiente VSSS}
+
+VSSS é uma modalidade de futebol com robôs pequenos em um campo reduzido. Uma
+câmera ou o simulador fornece as posições e velocidades. O robô usado aqui é
+\termo{diferencial}: possui duas rodas motorizadas independentes. Se as rodas
+giram juntas, ele anda; se giram em sentidos opostos, ele muda sua orientação.
+Neste experimento isolamos um goleiro e repetimos chutes controlados para estudar
+seu movimento antes de colocá-lo em uma partida completa.
+
 \section{O que é um campo vetorial?}
 
 Imagine pequenas setas desenhadas em muitos pontos do campo. Em cada posição
@@ -94,6 +103,13 @@ A direção da seta indica o sentido desejado do movimento; seu comprimento pode
 representar a intensidade. O robô não precisa planejar uma trajetória completa
 de uma só vez: ele observa o estado atual, consulta o campo, move-se um pouco e
 repete o cálculo.
+
+O termo \termo{campo univetorial} designa uma família de campos que combina
+aproximação ao alvo com orientação final. Perto da bola, as setas podem curvar a
+trajetória para que o robô chegue pelo lado apropriado, em vez de simplesmente
+apontar para o centro da bola. O raio controla o tamanho dessa curva; a
+suavidade controla quão gradual é a transição. No goleiro, esse campo auxilia a
+aproximação, mas a interceptação preditiva determina o alvo quando há ameaça.
 
 No goleiro, o campo mais importante é o de \termo{interceptação preditiva}. Em
 vez de apontar para a posição atual da bola, ele aponta para a posição na qual a
@@ -116,8 +132,52 @@ traves, com uma margem de segurança. O vetor desejado é então
 
 em que os índices $a$ e $r$ representam alvo e robô.
 
+Essa fórmula fornece apenas a \textbf{direção}. A velocidade é calculada à
+parte. Em forma compacta,
+
+\[
+  \mathbf{v}_{\mathrm{desejada}}=s(d,\mathbf{v}_{b},\mathbf{a}_{b},t)\,
+  \mathbf{F}_{\mathrm{int}},
+\]
+
+em que $s$ cresce quando o alvo está distante ou urgente e diminui perto da
+bola para melhorar o controle. Portanto, uma seta unitária não significa
+velocidade constante.
+
+\textbf{Exemplo simples.} A linha está em $x=-0{,}69$ m. A bola está em
+$(0{,}21;0{,}10)$ m e viaja para a esquerda a $0{,}90$ m/s, sem aceleração
+lateral. Ela levará aproximadamente $(0{,}21+0{,}69)/0{,}90=1$ s para chegar à
+linha. Com velocidade vertical de $-0{,}05$ m/s, o alvo previsto fica perto de
+$y=0{,}05$ m. O goleiro começa a se deslocar agora, sem esperar a bola chegar.
+
 Se a bola não estiver indo em direção ao gol, o goleiro continua próximo de sua
 linha, em vez de persegui-la pelo campo.
+
+\subsection*{Campos, controle e prioridades}
+
+Nem todo comportamento é um campo evoluído. A estratégia é organizada em
+camadas, nesta ordem conceitual:
+
+\begin{tabularx}{\linewidth}{>{\bfseries\raggedright\arraybackslash}p{3.2cm} X p{2.4cm}}
+\toprule
+Camada & Função & Quando atua \\
+\midrule
+Segurança e limites & Impede comandos inválidos e limita as rodas. & Sempre; maior prioridade. \\
+Rebatida por giro & Mantém contato e gira para afastar a bola. & Após tocar a bola. \\
+Interceptação preditiva & Atrai para o cruzamento previsto na linha. & Bola indo para o gol. \\
+Retorno e alinhamento & Recupera a linha e orienta o chassi. & Fora da linha ou desalinhado. \\
+Posição neutra & Mantém o goleiro diante da boca do gol. & Sem ameaça válida. \\
+\bottomrule
+\end{tabularx}
+
+O corredor defensivo também possui ganho ajustável, mas é usado principalmente
+no defensor. Para o goleiro predominam interceptação, retorno e rebatida.
+
+Na prática, essas camadas formam uma pequena máquina de estados. Durante uma
+ameaça, a interceptação escolhe o alvo, enquanto o controlador ainda corrige a
+orientação. Após o contato, a rebatida suspende temporariamente o alinhamento;
+quando termina, o retorno recupera a linha. Segurança e limites vencem todos os
+demais comandos.
 
 \section{Como o goleiro permanece paralelo ao gol}
 
@@ -146,6 +206,12 @@ longo dessa linha sem precisar girar a cada mudança de direção.
 \end{picture}
 \end{center}
 
+\begin{center}\small
+\textbf{Figura 1 --} Referencial adotado: o eixo horizontal $x$ atravessa o
+campo e o eixo vertical $y$ acompanha a boca do gol. A linha azul é a linha de
+defesa; o ponto verde é o cruzamento previsto da bola.
+\end{center}
+
 O controle ocorre em duas etapas:
 
 \begin{enumerate}[leftmargin=1.5em,itemsep=0.3em]
@@ -153,7 +219,8 @@ O controle ocorre em duas etapas:
   corrige esse erro transversal.
   \item Na linha, ele escolhe avançar ou recuar pelo caminho que exige a menor
   correção angular. Se estiver desalinhado por mais de 5 graus, para a
-  translação e corrige a orientação antes de continuar.
+  translação e corrige a orientação antes de continuar. Para recuar, mantém a
+  orientação e apenas inverte o sinal da velocidade das duas rodas.
 \end{enumerate}
 
 Para um robô diferencial, velocidade linear $v$ e angular $\omega$ viram
@@ -167,7 +234,9 @@ velocidades das rodas:
 onde $r$ é o raio da roda e $d$ é a distância entre rodas. Os comandos são
 limitados pela capacidade física. Após contato com a bola, o goleiro espera um
 pequeno tempo ajustável, mantém contato e executa um giro de $180^\circ$ para
-afastá-la. Uma histerese impede que esse giro seja disparado repetidamente.
+afastá-la. Esse giro é uma exceção curta à regra de permanecer paralelo. Ao
+terminar, o controlador volta ao estado de alinhamento. Uma histerese impede
+que o giro seja disparado repetidamente.
 
 \section{Como são criados os testes}
 
@@ -183,9 +252,20 @@ Isso evita punir um candidato por uma defesa que nenhum robô poderia realizar.
 Depois do aprendizado, cenários mais difíceis podem ser usados para avaliar
 robustez.
 
+A velocidade de até $2{,}5$ m/s citada adiante é uma referência desejada antes
+da saturação. A velocidade física alcançável, usada no teste de viabilidade, é
+$1{,}7$ m/s. O controlador pode pedir mais, mas os limites do robô reduzem o
+comando.
+
 \destaque{Todos os candidatos de uma geração recebem exatamente os mesmos
 cenários, definidos por uma semente aleatória registrada. Essa comparação justa
 é chamada, em estatística computacional, de uso de números aleatórios comuns.}
+
+Na execução atual, esse conjunto permanece fixo durante todas as gerações de
+uma mesma execução. Assim, a melhora não pode ser explicada pela troca dos
+chutes. Ao final, recomenda-se uma validação com outra semente, nunca vista no
+treinamento, para verificar se o goleiro aprendeu uma regra geral em vez de
+decorar os casos.
 
 \section{Função de perda}
 
@@ -197,7 +277,7 @@ chute são calculados quatro componentes entre 0 e 1:
 Componente & Interpretação & Peso \\
 \midrule
 Resultado & 1 se o goleiro sofre gol; 0 caso contrário. & 70\% \\
-Interceptação & Menor distância entre robô e bola, normalizada por 0,75 m. & 12\% \\
+Interceptação & Menor distância entre robô e bola, dividida por 0,75 m e limitada a $[0,1]$. & 12\% \\
 Reação & Tempo até o contato dividido pela duração do cenário. & 8\% \\
 Redirecionamento & 0 se o contato muda a trajetória da bola; 1 se não muda. & 10\% \\
 \bottomrule
@@ -213,31 +293,51 @@ dão informação mesmo quando dois candidatos obtêm o mesmo resultado. Por
 exemplo, entre dois goleiros que defenderam, favorece-se aquele que chegou mais
 perto, reagiu antes e afastou a bola.
 
+\textbf{Exemplo numérico.} Suponha que não houve gol
+($L_{\mathrm{res}}=0$), que a distância normalizada foi 0,20, o tempo de reação
+foi 0,30 e a bola foi redirecionada ($L_{\mathrm{red}}=0$). Então
+$L=0{,}12(0{,}20)+0{,}08(0{,}30)=0{,}048$. Se não houver contato, reação e
+redirecionamento recebem o pior valor, 1. Isso evita premiar um robô que apenas
+teve sorte porque o chute saiu para fora.
+
 \textbf{Cuidado ao interpretar zero.} $L_{\mathrm{res}}=0$ significa que
 nenhum gol foi sofrido nos cenários avaliados. Isso não prova que todas as bolas
 foram tocadas, pois um chute pode errar o gol. Já a perda total dificilmente é
 zero, porque distância e tempo de reação continuam positivos. O valor usado por
-uma geração é a média das perdas de todos os seus cenários.
+uma geração é a média das perdas de todos os seus cenários. Por isso, a análise
+deve separar gols sofridos, contatos ou defesas e chutes que erraram o alvo.
 
 \section{O que é otimizado}
 
 O algoritmo não inventa todo o controlador. Ele ajusta parâmetros contínuos,
-dentro de limites seguros:
+dentro de limites seguros. A tabela resume os principais grupos; não é uma
+lista exaustiva de cada variável interna:
 
 \small
-\begin{tabularx}{\linewidth}{>{\bfseries\raggedright\arraybackslash}p{3.4cm} X}
+\begin{tabularx}{\linewidth}{>{\bfseries\raggedright\arraybackslash}p{2.8cm} p{6.0cm} X}
 \toprule
-Grupo & Função e limites principais \\
+Grupo & O que é ajustado & Efeito visível \\
 \midrule
-Campo univetorial & Curvatura e suavidade da aproximação: raio de 0,04--0,30 m e suavidade de 0,01--0,30. \\
-Perfil de velocidade & Velocidades perto/longe (0,15--2,50 m/s) e distâncias de transição (0,03--1,40 m). \\
-Previsão & Horizonte temporal de 0,20--2,50 s e linha a 0,045--0,090 m do gol. \\
-Interceptação & Margem das traves de 0--0,12 m, ganho de 0,20--3,00, mistura e velocidade mínima da ameaça. \\
-Antecipação dinâmica & Ganhos de velocidade, aceleração e urgência de 0--1,50; folga temporal de 0--0,35 s. \\
-Rebatida & Espera de 0,02--0,30 s entre contato e giro de afastamento. \\
+Campo univetorial & Raio de 0,04--0,30 m e suavidade de 0,01--0,30. & Curva maior ou chegada mais direta à bola. \\
+Perfil de velocidade & Velocidades perto/longe (0,15--2,50 m/s) e transições (0,03--1,40 m). & Acelera distante e controla o contato perto. \\
+Previsão & Horizonte de 0,20--2,50 s e linha a 0,045--0,090 m do gol. & Antecipa mais cedo e fica mais perto ou longe do gol. \\
+Interceptação & Margem das traves, ganho, mistura e velocidade mínima da ameaça. & Decide quão forte e quando perseguir o cruzamento. \\
+Antecipação & Ganhos de velocidade, aceleração e urgência; folga até 0,35 s. & Reage mais cedo a chutes rápidos. \\
+Rebatida & Espera de 0,02--0,30 s antes do giro. & Mantém contato antes de afastar a bola. \\
 \bottomrule
 \end{tabularx}
 \normalsize
+
+A \termo{mistura} combina duas sugestões:
+
+\[
+ \mathbf{F}=\alpha\mathbf{F}_{\mathrm{int}}+
+ (1-\alpha)\mathbf{F}_{\mathrm{base}},\qquad 0\leq\alpha\leq1.
+\]
+
+Com $\alpha$ próximo de 1, domina a interceptação prevista; próximo de 0,
+domina a aproximação univetorial básica. A velocidade mínima da ameaça decide
+a partir de qual movimento da bola essa interceptação passa a ser considerada.
 
 O campo de corredor defensivo também possui ganho ajustável, embora seja mais
 importante para o defensor. Limites evitam soluções perigosas ou incompatíveis
@@ -247,7 +347,9 @@ são evoluídas.
 \section{Computação evolutiva, sem mistério}
 
 Computação evolutiva procura soluções por população. Cada candidato é um vetor
-com todos os parâmetros acima. O ciclo é:
+com todos os parâmetros acima. Pense em cada vetor como uma receita: os
+ingredientes são as mesmas equações e as quantidades são os parâmetros. A cada
+geração, várias receitas são testadas nos mesmos chutes. O ciclo é:
 
 \begin{center}
 \fcolorbox{azul}{cinza}{\parbox{0.88\linewidth}{
@@ -268,8 +370,13 @@ parâmetro, a busca continua ampla; se concordam, ela se concentra. Um piso de
 
 Há também um \termo{modelo substituto}: uma regressão linear com regularização
 ridge aprende localmente a relação entre parâmetros testados e perdas medidas.
-Ela sugere uma pequena mudança da média na direção de menor perda. É um atalho
+Ela funciona como um mapa aproximado da região já explorada e sugere uma
+pequena mudança da média na direção de menor perda. É um atalho
 para gastar menos simulações, não uma substituição da física.
+
+Como exemplo de escala, uma execução com 32 candidatos, 30 chutes e 16 gerações
+avalia $32\times30\times16=15\,360$ cenários. É por isso que executar cenários
+em paralelo e aproveitar o mapa aproximado pode economizar bastante tempo.
 
 \destaque{O método é melhor descrito como \textbf{estratégia evolutiva diagonal
 adaptativa assistida por modelo substituto}. Não é aprendizado por reforço e não
@@ -283,6 +390,15 @@ O dashboard mostra perda total por geração, cada componente separadamente,
 ranking e reprodução do melhor candidato. O esperado é uma tendência de queda,
 mas pequenas oscilações são normais: a população continua explorando e a física
 tem variações. É importante observar simultaneamente:
+
+\begin{center}
+\includegraphics[width=0.98\linewidth]{docs/goalkeeper-training/perdas-dashboard.png}
+
+\small\textbf{Figura 2 --} Exemplo real de acompanhamento. No painel esquerdo,
+a perda total cai bastante. No painel direito, a perda de resultado chega perto
+de zero, enquanto a reação permanece como o componente mais alto; esse é um
+sinal de que ainda há espaço para antecipar o contato.
+\end{center}
 
 \begin{itemize}
   \item a perda de resultado, para saber quantos gols passaram;
