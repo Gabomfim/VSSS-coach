@@ -148,6 +148,17 @@ class RoleTrialTests(unittest.TestCase):
         self.assertAlmostEqual(upward[0], upward[1])
         self.assertAlmostEqual(downward[0], downward[1])
 
+    def test_goalkeeper_brakes_smoothly_and_settles_at_interception_point(self) -> None:
+        strategy = VectorFieldStrategy()
+        target = Vec2(-0.60, 0.10)
+        robot = lambda y: RobotState(position=Vec2(-0.60, y), orientation=math.pi / 2)
+        far = strategy.wheel_command_for_line_motion(robot(0.0), target, 1.0)
+        near = strategy.wheel_command_for_line_motion(robot(0.075), target, 1.0)
+        settled = strategy.wheel_command_for_line_motion(robot(0.095), target, 1.0)
+        self.assertGreater(abs(far[0]), abs(near[0]))
+        self.assertGreater(abs(near[0]), 0.0)
+        self.assertEqual(settled, (0.0, 0.0))
+
     def test_goalkeeper_rotates_in_place_until_parallel_to_goal_line(self) -> None:
         strategy = VectorFieldStrategy()
         target = Vec2(-0.60, 0.20)

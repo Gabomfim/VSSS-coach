@@ -525,8 +525,16 @@ class VectorFieldStrategy:
         axis_heading: float = math.pi / 2.0,
         alignment_tolerance: float = math.radians(5.0),
         cross_track_tolerance: float = 0.015,
+        target_tolerance: float = 0.012,
+        braking_distance: float = 0.08,
     ) -> tuple[float, float]:
-        """Recover onto a line, align to its axis, then drive along it."""
+        """Recover onto a line, align to its axis, then drive along it.
+
+        Translation uses a deadband and a smooth braking envelope.  Without
+        it, the minimum role speed can carry the robot past a nearby target on
+        every control frame, repeatedly reversing both wheels and producing a
+        visible jitter around the interception point.
+        """
         axis = Vec2(math.cos(axis_heading), math.sin(axis_heading))
         normal_heading = axis_heading - math.pi / 2.0
         normal = Vec2(math.cos(normal_heading), math.sin(normal_heading))
@@ -541,7 +549,14 @@ class VectorFieldStrategy:
             heading_error, orientation_sign = forward_error, 1.0
         else:
             heading_error, orientation_sign = reverse_error, -1.0
-        requested = 0.0 if abs(motion_error) < 0.005 else math.copysign(abs(speed), motion_error)
+        error_magnitude = abs(motion_error)
+        if error_magnitude <= target_tolerance:
+            requested = 0.0
+        else:
+            span = max(1e-6, braking_distance - target_tolerance)
+            q = max(0.0, min(1.0, (error_magnitude - target_tolerance) / span))
+            braking_scale = q * q * (3.0 - 2.0 * q)
+            requested = math.copysign(abs(speed) * braking_scale, motion_error)
         # Never let a large translation command consume the wheel-speed budget
         # needed to restore alignment. Once parallel, retain angular feedback
         # while driving so collisions and the clearance spin cannot leave the
