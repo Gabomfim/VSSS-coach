@@ -32,7 +32,7 @@ HTML = (
     )
     .replace(
         "earliest interception ${active?'ACTIVE':'inactive'}",
-        "${role==='goalkeeper'?'goalkeeper line':'earliest interception'} ${active?'ACTIVE':'inactive'} | mode ${field.mode||'unknown'}",
+        "${role==='goalkeeper'?'goalkeeper line':'earliest interception'} ${active?'ACTIVE':'inactive'} | mode ${field.mode||'unknown'} | shot ${f.role_shot||1}${f.role_repositioning?' — REPOSITIONING':''}",
     )
     .replace(
         "x.fill()});x.fillStyle='#fff';x.beginPath();x.arc(sx(f.ball.x),sy(f.ball.y),10,0,Math.PI*2);x.fill();",

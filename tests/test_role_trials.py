@@ -359,6 +359,8 @@ class RoleTrialTests(unittest.TestCase):
         self.assertIn('id="components"', HTML)
         self.assertIn("Backend", HTML)
         self.assertIn("field.mode", HTML)
+        self.assertIn("role_repositioning", HTML)
+        self.assertIn("REPOSITIONING", HTML)
         for component in ("outcome", "interception", "reaction_time", "redirection"):
             self.assertIn(component, HTML)
 
