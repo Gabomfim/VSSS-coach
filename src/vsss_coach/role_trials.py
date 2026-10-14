@@ -471,11 +471,19 @@ def run(args: argparse.Namespace) -> Path:
             evaluator = _evaluate
         with ProcessPoolExecutor(max_workers=args.workers) as executor:
             futures = [executor.submit(evaluator, task) for task in tasks]
-            for future in as_completed(futures):
-                result = future.result()
-                results.append(result)
-                atomic_json(generation_checkpoint / f"{result['candidate_id']}.json", result)
-                atomic_json(run_dir / "live.json", {"status": "running", "generation": generation, "completed": len(results), "total": len(population), "best_loss_so_far": min(float(row["loss"]) for row in results)})
+            try:
+                for future in as_completed(futures):
+                    result = future.result()
+                    results.append(result)
+                    atomic_json(generation_checkpoint / f"{result['candidate_id']}.json", result)
+                    atomic_json(run_dir / "live.json", {"status": "running", "generation": generation, "completed": len(results), "total": len(population), "best_loss_so_far": min(float(row["loss"]) for row in results)})
+            except Exception as error:
+                atomic_json(run_dir / "live.json", {
+                    "status": "failed", "generation": generation,
+                    "completed": len(results), "total": len(population),
+                    "error": str(error),
+                })
+                raise
         results.sort(key=lambda row: float(row["loss"]))
         best_frames = results[0].pop("frames", [])
         for result in results[1:]:

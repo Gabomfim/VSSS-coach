@@ -18,7 +18,9 @@ from vsss_coach.role_trials import (
     BOUNDS, RoleCandidate, build_parser, evaluate_trial, generate_scenarios, run,
     scenario_is_reachable, speed_profile, surrogate_refine_mean,
 )
-from vsss_coach.role_travesim import RoleTraveSimConfig, run_physical_trial
+from vsss_coach.role_travesim import (
+    RoleTraveSimConfig, controller_environment, run_physical_trial,
+)
 from vsss_coach.goalkeeper_compare import compose, synchronize_shots, training_replay
 from vsss_coach.fields import (
     ally_goal_ball_corridor_field, earliest_reachable_interception_field,
@@ -29,6 +31,11 @@ from vsss_coach.model import BallState, RobotState, Vec2
 
 
 class RoleTrialTests(unittest.TestCase):
+    def test_physical_controller_uses_absolute_source_path(self) -> None:
+        environment = controller_environment()
+        source_root = str((Path(__file__).parents[1] / "src").resolve())
+        self.assertEqual(environment["PYTHONPATH"].split(__import__("os").pathsep)[0], source_root)
+
     def test_comparison_uses_original_training_frames(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "replays"

@@ -32,6 +32,15 @@ class RoleTraveSimConfig:
     client_sync_delay_ms: int = 2
 
 
+def controller_environment() -> dict[str, str]:
+    """Return an environment that can import VSSS Coach from any Webots cwd."""
+    environment = os.environ.copy()
+    source_root = str(Path(__file__).resolve().parents[1])
+    existing = environment.get("PYTHONPATH")
+    environment["PYTHONPATH"] = source_root if not existing else os.pathsep.join((source_root, existing))
+    return environment
+
+
 def _with_ball_acceleration(frames: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Annotate replay frames with a filtered acceleration estimate."""
     previous: dict[str, Any] | None = None
@@ -150,7 +159,10 @@ def _run_physical_trial_once(payload: tuple[str, Any, list[Any], int, RoleTraveS
         world_path = root / "worlds" / f".coach-role-{os.getpid()}-{worker_index}.wbt"
         world_path.write_text(world, encoding="utf-8")
         common = [sys.executable, "-m", "vsss_coach.client", "--team", "blue", "--vision-port", str(ports[3]), "--vision-interface", "127.0.0.1", "--command-port", str(ports[2]), "--attack-sign", "1", "--match-duration", "100000", "--candidate", str(candidate_path), "--role", role, "--active-robot-id", "0"]
-        client = subprocess.Popen(common, cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        client = subprocess.Popen(
+            common, cwd=root, env=controller_environment(),
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+        )
         webots = subprocess.Popen([config.webots, "--batch", f"--mode={config.webots_mode}", "--no-rendering", str(world_path)], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, start_new_session=True)
         try:
             webots.wait(timeout=config.timeout)
