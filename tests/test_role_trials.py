@@ -22,7 +22,8 @@ from vsss_coach.role_travesim import RoleTraveSimConfig, run_physical_trial
 from vsss_coach.goalkeeper_compare import compose, synchronize_shots, training_replay
 from vsss_coach.fields import (
     ally_goal_ball_corridor_field, earliest_reachable_interception_field,
-    interception_crossing_time, interception_speed, predictive_interception_field,
+    goalkeeper_line_tracking_field, interception_crossing_time,
+    interception_speed, predictive_interception_field,
 )
 from vsss_coach.model import BallState, RobotState, Vec2
 
@@ -235,6 +236,22 @@ class RoleTrialTests(unittest.TestCase):
         self.assertEqual(direction, Vec2())
         self.assertIsNone(target)
 
+    def test_goalkeeper_tracks_ball_above_and_below_without_leaving_goal(self) -> None:
+        robot = RobotState(position=Vec2(-0.69, 0.0))
+        upward, upper_target = goalkeeper_line_tracking_field(
+            robot, BallState(position=Vec2(0.1, 0.50)), -0.75, 0.40,
+            1.0, 0.06, 0.04,
+        )
+        downward, lower_target = goalkeeper_line_tracking_field(
+            robot, BallState(position=Vec2(0.1, -0.50)), -0.75, 0.40,
+            1.0, 0.06, 0.04,
+        )
+        self.assertGreater(upward.y, 0.0)
+        self.assertLess(downward.y, 0.0)
+        self.assertAlmostEqual(upper_target.y, 0.16)
+        self.assertAlmostEqual(lower_target.y, -0.16)
+        self.assertAlmostEqual(upper_target.x, -0.69)
+
     def test_acceleration_changes_predicted_crossing_time_and_target(self) -> None:
         accelerating = BallState(Vec2(0.0, 0.0), Vec2(-0.2, 0.1), Vec2(-0.6, 0.2))
         constant = BallState(Vec2(0.0, 0.0), Vec2(-0.2, 0.1), Vec2())
@@ -323,6 +340,7 @@ class RoleTrialTests(unittest.TestCase):
         self.assertIn('id="loss"', HTML)
         self.assertIn('id="components"', HTML)
         self.assertIn("Backend", HTML)
+        self.assertIn("field.mode", HTML)
         for component in ("outcome", "interception", "reaction_time", "redirection"):
             self.assertIn(component, HTML)
 

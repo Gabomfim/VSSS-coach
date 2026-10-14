@@ -15,7 +15,7 @@ from typing import Iterable
 
 from .fields import (
     ally_goal_ball_corridor_field, earliest_reachable_interception_field,
-    interception_speed,
+    goalkeeper_line_tracking_field, interception_speed,
 )
 from .model import BallState, RobotState, Vec2
 
@@ -230,7 +230,21 @@ def evaluate_episode(role: str, candidate: RoleCandidate, scenario: Scenario) ->
         pursuit_y = by
         dx, dy = pursuit_x - px, pursuit_y - py
         control_distance = math.hypot(dx, dy)
-        if role == "defender" and threat:
+        if role == "goalkeeper":
+            robot_state = RobotState(position=Vec2(px, py), robot_id=0)
+            ball_state = BallState(Vec2(bx, by), Vec2(bvx, bvy), Vec2(ball_ax, ball_ay))
+            if threat and time_to_line > 0.0:
+                target = Vec2(line_x, intercept_y)
+                direction = (target - robot_state.position).unit()
+            else:
+                direction, target = goalkeeper_line_tracking_field(
+                    robot_state, ball_state, threat_goal_x, 0.40, 1.0,
+                    candidate.intercept_offset, candidate.intercept_margin,
+                )
+                time_to_line = candidate.intercept_horizon
+            dx, dy = direction.x, direction.y
+            control_distance = (target - robot_state.position).norm()
+        elif role == "defender" and threat:
             ball_state = BallState(Vec2(bx, by), Vec2(bvx, bvy), Vec2(ball_ax, ball_ay))
             robot_state = RobotState(position=Vec2(px, py), robot_id=0)
             intercept, target, intercept_time = earliest_reachable_interception_field(

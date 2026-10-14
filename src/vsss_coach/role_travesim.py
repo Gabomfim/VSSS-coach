@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 from .fields import (
     ally_goal_ball_corridor_field, earliest_reachable_interception_field,
+    goalkeeper_line_tracking_field,
     interception_crossing_time, predictive_interception_field,
 )
 from .formations import place_both_teams
@@ -80,6 +81,14 @@ def _with_role_fields(frames: list[dict[str, Any]], candidate: Any, role: str) -
             )
             line_x = -0.75 + goalkeeper_offset
             intercept_time = interception_crossing_time(ball, line_x, candidate.intercept_horizon)
+            mode = "predictive_interception"
+            if intercept is None:
+                _, intercept = goalkeeper_line_tracking_field(
+                    robot, ball, -0.75, 0.40, 1.0,
+                    goalkeeper_offset, candidate.intercept_margin,
+                )
+                intercept_time = candidate.intercept_horizon
+                mode = "ball_tracking"
             corridor = None
         else:
             _, intercept, intercept_time = earliest_reachable_interception_field(
@@ -90,10 +99,12 @@ def _with_role_fields(frames: list[dict[str, Any]], candidate: Any, role: str) -
                 robot, ball, -0.75, 0.40, 1.0, candidate.intercept_horizon,
                 candidate.intercept_min_speed,
             )
+            mode = "earliest_interception"
         frame[f"{role}_field"] = {
             "intercept": None if intercept is None else {"x": intercept.x, "y": intercept.y},
             "intercept_time": None if not math.isfinite(intercept_time) else intercept_time,
             "corridor": None if corridor is None else {"x": corridor.x, "y": corridor.y},
+            "mode": mode,
         }
     return frames
 

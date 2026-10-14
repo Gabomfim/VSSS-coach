@@ -14,6 +14,7 @@ from typing import Any
 from .controller import StrategyConfig, VectorFieldStrategy, wrap_angle
 from .fields import (
     ally_goal_ball_corridor_field, earliest_reachable_interception_field,
+    goalkeeper_line_tracking_field,
     interception_crossing_time, interception_speed, predictive_interception_field,
     univector_ball_field,
 )
@@ -250,9 +251,11 @@ def run(args: argparse.Namespace) -> None:
                             world.ball, line_x, config.role_intercept_horizon
                         )
                         if target is None:
-                            half_opening = max(0.02, world.goal_width / 2.0 - config.role_intercept_margin)
-                            target = Vec2(line_x, max(-half_opening, min(half_opening, world.ball.position.y)))
-                            interception = (target - robot.position).unit()
+                            interception, target = goalkeeper_line_tracking_field(
+                                robot, world.ball, ally_goal_x, world.goal_width,
+                                world.attack_sign, goalkeeper_offset,
+                                config.role_intercept_margin,
+                            )
                             intercept_time = config.role_intercept_horizon
                         corridor = Vec2()
                     else:

@@ -127,6 +127,25 @@ def predictive_interception_field(
     return (target - robot.position).unit(), target
 
 
+def goalkeeper_line_tracking_field(
+    robot: MovingState,
+    ball: BallState,
+    ally_goal_x: float,
+    goal_width: float,
+    attack_sign: float,
+    line_offset: float,
+    lateral_margin: float,
+) -> tuple[Vec2, Vec2]:
+    """Track the ball vertically while keeping the target inside the goal mouth."""
+    line_x = ally_goal_x + attack_sign * line_offset
+    half_opening = max(0.02, goal_width / 2.0 - lateral_margin)
+    target = Vec2(
+        line_x,
+        max(-half_opening, min(half_opening, ball.position.y)),
+    )
+    return (target - robot.position).unit(), target
+
+
 def interception_crossing_time(ball: BallState, line_x: float, horizon: float) -> float:
     """Return the earliest positive constant-acceleration crossing time."""
     del horizon  # Kept in the API because callers bound the resulting prediction.
