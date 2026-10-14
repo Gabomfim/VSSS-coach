@@ -266,8 +266,8 @@ class RoleTrialTests(unittest.TestCase):
         )
         self.assertGreater(upward.y, 0.0)
         self.assertLess(downward.y, 0.0)
-        self.assertAlmostEqual(upper_target.y, 0.16)
-        self.assertAlmostEqual(lower_target.y, -0.16)
+        self.assertAlmostEqual(upper_target.y, 0.185)
+        self.assertAlmostEqual(lower_target.y, -0.185)
         self.assertAlmostEqual(upper_target.x, -0.69)
 
     def test_acceleration_changes_predicted_crossing_time_and_target(self) -> None:

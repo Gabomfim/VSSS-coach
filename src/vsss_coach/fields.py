@@ -138,7 +138,11 @@ def goalkeeper_line_tracking_field(
 ) -> tuple[Vec2, Vec2]:
     """Track the ball vertically while keeping the target inside the goal mouth."""
     line_x = ally_goal_x + attack_sign * line_offset
-    half_opening = max(0.02, goal_width / 2.0 - lateral_margin)
+    # The robot body must overlap the region beside each post; using the
+    # evolved interception margin directly left a ball-width channel behind
+    # the goalkeeper.  Keep only a small deterministic post clearance.
+    post_clearance = min(max(0.0, lateral_margin), 0.015)
+    half_opening = max(0.02, goal_width / 2.0 - post_clearance)
     target = Vec2(
         line_x,
         max(-half_opening, min(half_opening, ball.position.y)),
